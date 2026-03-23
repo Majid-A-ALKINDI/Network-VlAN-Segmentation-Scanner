@@ -76,4 +76,4 @@ The tool will prompt for:
 
 ## Author
 
-Built by Majid Alkindi.
+Majid Alkindi.
