@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <rect width="1200" height="260" fill="#101d2d" rx="18"/>
+  <text x="40" y="62" fill="#9fd2ff" font-size="34" font-family="Segoe UI, Arial" font-weight="700">🧾 Version Collector (Sample Data)</text>
+  <text x="40" y="98" fill="#c6d4e5" font-size="20" font-family="Segoe UI, Arial">Collects version evidence from every loaded device config.</text>
+  <rect x="40" y="125" width="260" height="92" rx="12" fill="#1f4f87"/>
+  <rect x="320" y="125" width="260" height="92" rx="12" fill="#2b6e5d"/>
+  <rect x="600" y="125" width="260" height="92" rx="12" fill="#6a4f23"/>
+  <rect x="880" y="125" width="280" height="92" rx="12" fill="#4e3f7d"/>
+  <text x="58" y="162" fill="#fff" font-size="16" font-family="Segoe UI, Arial" font-weight="700">Devices with Version</text>
+  <text x="58" y="194" fill="#fff" font-size="30" font-family="Segoe UI, Arial" font-weight="700">2 / 2</text>
+  <text x="338" y="162" fill="#fff" font-size="16" font-family="Segoe UI, Arial" font-weight="700">version Lines</text>
+  <text x="338" y="194" fill="#fff" font-size="30" font-family="Segoe UI, Arial" font-weight="700">2</text>
+  <text x="618" y="162" fill="#fff" font-size="16" font-family="Segoe UI, Arial" font-weight="700">Sample Revisions</text>
+  <text x="618" y="194" fill="#fff" font-size="30" font-family="Segoe UI, Arial" font-weight="700">2</text>
+  <text x="898" y="162" fill="#fff" font-size="16" font-family="Segoe UI, Arial" font-weight="700">Evidence Type</text>
+  <text x="898" y="194" fill="#fff" font-size="22" font-family="Segoe UI, Arial" font-weight="700">Line-linked records</text>
+</svg>

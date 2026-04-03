@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0e1624"/>
+      <stop offset="100%" stop-color="#16263d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="260" fill="url(#bg)" rx="18"/>
+  <text x="40" y="62" fill="#8cc8ff" font-size="34" font-family="Segoe UI, Arial" font-weight="700">📊 Core Inventory (Sample Data)</text>
+  <text x="40" y="98" fill="#c6d4e5" font-size="20" font-family="Segoe UI, Arial">Devices: 2 • VLANs: 10 • Interfaces: 36 • Static Routes: 10</text>
+  <rect x="40" y="125" width="250" height="92" rx="12" fill="#1f3c68"/>
+  <rect x="310" y="125" width="250" height="92" rx="12" fill="#1f6a5b"/>
+  <rect x="580" y="125" width="250" height="92" rx="12" fill="#6b4f1f"/>
+  <rect x="850" y="125" width="310" height="92" rx="12" fill="#5a2c60"/>
+  <text x="62" y="162" fill="#eaf4ff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">VLANs</text>
+  <text x="62" y="194" fill="#eaf4ff" font-size="30" font-family="Segoe UI, Arial" font-weight="700">10</text>
+  <text x="332" y="162" fill="#e9fff8" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Interfaces</text>
+  <text x="332" y="194" fill="#e9fff8" font-size="30" font-family="Segoe UI, Arial" font-weight="700">36</text>
+  <text x="602" y="162" fill="#fff4df" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Routes</text>
+  <text x="602" y="194" fill="#fff4df" font-size="30" font-family="Segoe UI, Arial" font-weight="700">10</text>
+  <text x="872" y="162" fill="#fcefff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Parsed Device Configs</text>
+  <text x="872" y="194" fill="#fcefff" font-size="30" font-family="Segoe UI, Arial" font-weight="700">2</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <rect width="1200" height="260" fill="#101a2a" rx="18"/>
+  <text x="40" y="62" fill="#9ee7ff" font-size="34" font-family="Segoe UI, Arial" font-weight="700">🧭 Relationship Analysis (Sample Data)</text>
+  <text x="40" y="98" fill="#c6d4e5" font-size="20" font-family="Segoe UI, Arial">Path model in graph: VLAN → Switch → Router → Subnet</text>
+  <rect x="80" y="140" width="170" height="64" rx="12" fill="#2f5f9a"/>
+  <rect x="320" y="140" width="200" height="64" rx="12" fill="#3d4f63"/>
+  <rect x="590" y="140" width="200" height="64" rx="12" fill="#6c4b9a"/>
+  <rect x="860" y="140" width="250" height="64" rx="12" fill="#2f8b5a"/>
+  <text x="126" y="178" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">VLANs: 10</text>
+  <text x="350" y="178" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Switches: 1+</text>
+  <text x="623" y="178" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Routers: 1+</text>
+  <text x="914" y="178" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Subnets: derived</text>
+  <path d="M250 172 L320 172" stroke="#9ec5ff" stroke-width="3" marker-end="url(#a)"/>
+  <path d="M520 172 L590 172" stroke="#d8b7ff" stroke-width="3" marker-end="url(#a)"/>
+  <path d="M790 172 L860 172" stroke="#9ff0c7" stroke-width="3" marker-end="url(#a)"/>
+  <defs>
+    <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#c8d4e5"/>
+    </marker>
+  </defs>
+</svg>

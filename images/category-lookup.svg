@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260">
+  <rect width="1200" height="260" fill="#181520" rx="18"/>
+  <text x="40" y="62" fill="#d9c4ff" font-size="34" font-family="Segoe UI, Arial" font-weight="700">🔎 Fast Lookup Tools (Sample Data)</text>
+  <text x="40" y="98" fill="#d7cae8" font-size="20" font-family="Segoe UI, Arial">Lookup tabs are pre-populated from parsed inventory and relationship mappings.</text>
+  <rect x="40" y="125" width="360" height="92" rx="12" fill="#4d3b78"/>
+  <rect x="420" y="125" width="360" height="92" rx="12" fill="#315b79"/>
+  <rect x="800" y="125" width="360" height="92" rx="12" fill="#275f49"/>
+  <text x="58" y="162" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">VLAN Search Scope</text>
+  <text x="58" y="194" fill="#fff" font-size="28" font-family="Segoe UI, Arial" font-weight="700">10 VLANs</text>
+  <text x="438" y="162" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">IP Lookup Scope</text>
+  <text x="438" y="194" fill="#fff" font-size="28" font-family="Segoe UI, Arial" font-weight="700">36 Interfaces</text>
+  <text x="818" y="162" fill="#fff" font-size="18" font-family="Segoe UI, Arial" font-weight="700">Correlated Reachability</text>
+  <text x="818" y="194" fill="#fff" font-size="28" font-family="Segoe UI, Arial" font-weight="700">10 Static Routes</text>
+</svg>
