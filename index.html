@@ -1,0 +1,3170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Network Devices Configuration Analyzer</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --accent3: #f78166;
+      --accent4: #d2a8ff;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --tag-bg: #1f6feb33;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.3rem; font-weight: 600; color: var(--accent); }
+    header p { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+    .header-credit {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: #1c2128;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 14px;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    .site-footer {
+      text-align: center;
+      padding: 18px 32px;
+      margin-top: 40px;
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .site-footer strong { color: var(--accent); }
+    .footer-divider { opacity: 0.4; }
+
+    .upload-zone {
+      margin: 32px auto;
+      max-width: 960px;
+      padding: 0 24px;
+    }
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media(max-width:680px){ .upload-grid { grid-template-columns: 1fr; } }
+
+    .upload-card {
+      background: var(--panel);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color .2s;
+    }
+    .upload-card:hover, .upload-card.drag-over { border-color: var(--accent); }
+    .upload-card label { font-size: 0.92rem; font-weight: 600; color: var(--accent); }
+    .upload-card small { color: var(--muted); font-size: 0.78rem; }
+    .upload-card input[type=file] { display: none; }
+    .file-btn {
+      display: inline-block;
+      padding: 6px 16px;
+      background: var(--tag-bg);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.83rem;
+      transition: background .2s;
+      width: fit-content;
+    }
+    .file-btn:hover { background: #1f6feb55; }
+    .file-name { font-size: 0.8rem; color: var(--accent2); min-height: 18px; }
+    textarea.config-paste {
+      background: #010409;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.78rem;
+      resize: vertical;
+      min-height: 120px;
+      width: 100%;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea.config-paste:focus { border-color: var(--accent); }
+
+    .device-name-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .device-name-row input {
+      flex: 1;
+      background: #010409;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.82rem;
+      outline: none;
+    }
+    .device-name-row input:focus { border-color: var(--accent); }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #0d1117; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn:hover { opacity: 0.88; }
+
+    /* ── Results ── */
+    #results {
+      max-width: 1200px;
+      margin: 0 auto 48px;
+      padding: 0 24px;
+      display: none;
+    }
+
+    .export-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-sm { padding: 6px 16px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border); background: var(--panel); color: var(--text); cursor: pointer; }
+    .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: var(--muted);
+      transition: color .2s, border-color .2s;
+      user-select: none;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Device cards */
+    .device-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    .device-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .device-card h3 { font-size: 1rem; color: var(--accent); margin-bottom: 4px; }
+    .device-card .dtype { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat { background: var(--tag-bg); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; }
+    .stat span { color: var(--accent); font-weight: 700; }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    thead th {
+      background: var(--panel);
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: .06em;
+      padding: 10px 14px;
+      text-align: left;
+      position: sticky; top: 0; z-index: 1;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid #21262d; transition: background .15s; }
+    tbody tr:hover { background: #1c2128; }
+    tbody td { padding: 9px 14px; vertical-align: top; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-blue   { background: #1f6feb33; color: var(--accent); }
+    .badge-green  { background: #3fb95033; color: var(--accent2); }
+    .badge-red    { background: #f7816633; color: var(--accent3); }
+    .badge-purple { background: #d2a8ff33; color: var(--accent4); }
+    .badge-gray   { background: var(--border); color: var(--muted); }
+
+    /* Topology */
+    #topology-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 300px;
+    }
+    .topo-device { margin-bottom: 28px; }
+    .topo-device h4 { color: var(--accent); margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .topo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .topo-vlan {
+      background: #161b22;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      position: relative;
+    }
+    .topo-vlan:hover { border-color: var(--accent2); }
+    .topo-vlan .vid { font-size: 0.7rem; color: var(--muted); }
+    .topo-vlan .vname { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .topo-vlan .vnet { font-size: 0.75rem; color: var(--accent2); font-family: monospace; }
+    .topo-vlan .viface { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+
+    /* Search */
+    .search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-row input {
+      flex: 1;
+      min-width: 180px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .search-row input:focus { border-color: var(--accent); }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .empty-state svg { margin-bottom: 12px; opacity: .4; }
+
+    /* Print */
+    @media print {
+      header, .upload-zone, .actions, .export-bar, .search-row { display: none !important; }
+      #results { display: block !important; }
+      body { background: white; color: black; }
+      .tab-panel { display: block !important; }
+      thead th { background: #eee; color: #333; }
+      tbody tr:hover { background: none; }
+    }
+
+    /* ── VLAN Router Map ── */
+    .vmap-section { margin-bottom: 32px; }
+    .vmap-section-title { color: var(--accent); font-size: .95rem; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .vmap-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+    .vmap-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #1c2128; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .vmap-vid { font-size: 1rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+    .vmap-name { font-size: .85rem; color: var(--text); }
+    .vmap-body { display: grid; grid-template-columns: 230px 1fr; }
+    @media(max-width:720px){ .vmap-body { grid-template-columns: 1fr; } }
+    .vmap-left { padding: 12px 16px; border-right: 1px solid var(--border); }
+    .vmap-left .lbl { font-size: .68rem; text-transform: uppercase; color: var(--muted); letter-spacing: .06em; margin-bottom: 3px; margin-top: 8px; }
+    .vmap-left .lbl:first-child { margin-top: 0; }
+    .vmap-left .val { font-size: .8rem; font-family: monospace; color: var(--accent2); margin-bottom: 2px; }
+    .vmap-right { padding: 12px 16px; }
+    .vmap-gw-block { background: #1c2128; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; border-left: 3px solid var(--accent); }
+    .vmap-gw-block.intra { border-left-color: var(--accent2); }
+    .gw-header { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 7px; }
+    .vmap-gw-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .device-tag { font-size: .8rem; font-weight: 600; color: var(--accent); }
+    .iface-tag  { font-size: .78rem; color: var(--text); font-family: monospace; }
+    .ip-tag     { font-size: .78rem; color: var(--accent2); font-family: monospace; }
+    .reason-tag { font-size: .7rem; color: var(--muted); }
+    .net-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+    .net-group-title { font-size: .68rem; text-transform: uppercase; color: var(--muted); letter-spacing: .06em; margin-top: 10px; margin-bottom: 4px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .net-item { display: flex; align-items: center; gap: 7px; font-size: .78rem; padding: 2px 0; }
+    .net-icon { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .net-icon-intra  { background: var(--accent2); }
+    .net-icon-router { background: var(--accent); }
+    .net-icon-route  { background: var(--accent4); }
+    .net-addr { font-family: monospace; color: var(--text); }
+    .net-desc { color: var(--muted); font-size: .72rem; }
+    .vmap-no-route { font-size: .82rem; color: var(--accent3); padding: 8px 0; }
+
+    /* ── VRF Map ── */
+    .vrfmap-device { margin-bottom: 36px; }
+    .vrfmap-device-title { font-size: 1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 7px; margin-bottom: 16px; }
+    .vrfmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+    .vrf-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .vrf-card-header { background: #1c2128; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .vrf-card-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .vrf-name-badge { font-size: .9rem; font-weight: 700; color: var(--accent4); }
+    .vrf-rd { font-size: .75rem; font-family: monospace; color: var(--muted); }
+    .vrf-desc { font-size: .75rem; color: var(--muted); font-style: italic; }
+    .vrf-rt-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px; }
+    .vrf-rt-badge { font-size: .68rem; padding: 2px 7px; border-radius: 4px; font-family: monospace; }
+    .vrf-rt-import { background: #3fb95022; color: var(--accent2); border: 1px solid #3fb95044; }
+    .vrf-rt-export { background: #58a6ff22; color: var(--accent);  border: 1px solid #58a6ff44; }
+    .vrf-card-body { padding: 12px 16px; }
+    .vrf-section-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-top: 10px; margin-bottom: 5px; }
+    .vrf-section-label:first-child { margin-top: 0; }
+    .vrf-iface-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; padding: 5px 8px; background: #10161d; border-radius: 6px; flex-wrap: wrap; }
+    .vrf-iface-name { font-size: .78rem; font-family: monospace; color: var(--text); min-width: 140px; }
+    .vrf-iface-net  { font-size: .77rem; font-family: monospace; color: var(--accent2); }
+    .vrf-iface-desc { font-size: .7rem; color: var(--muted); }
+    .vrf-route-row  { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; flex-wrap: wrap; }
+    .vrf-route-net  { font-size: .77rem; font-family: monospace; color: var(--text); min-width: 130px; }
+    .vrf-route-nh   { font-size: .77rem; font-family: monospace; color: var(--accent); }
+    .vrf-route-name { font-size: .7rem; color: var(--muted); }
+    .vrf-leak-card  { margin-top: 10px; padding: 8px 12px; background: #d2a8ff11; border: 1px solid #d2a8ff33; border-radius: 8px; }
+    .vrf-leak-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--accent4); margin-bottom: 6px; }
+    .vrf-leak-row   { font-size: .75rem; margin-bottom: 3px; }
+    .vrf-global     { border-color: #58a6ff55; }
+    .vrf-global .vrf-card-header { background: #121d2f; }
+    .vrf-global .vrf-name-badge  { color: var(--accent); }
+
+    /* ── VLAN Segmentation ── */
+    .seg-device { margin-bottom: 36px; }
+    .seg-device-title { font-size: 1rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 7px; margin-bottom: 16px; }
+    .seg-summary { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 22px; }
+    .seg-stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 18px; text-align: center; min-width: 90px; }
+    .seg-stat .sval { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+    .seg-stat .slbl { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+    .seg-stat.isolated .sval  { color: var(--accent2); }
+    .seg-stat.routed   .sval  { color: #f0883e; }
+    .seg-stat.acl      .sval  { color: var(--accent); }
+    .seg-stat.nol3     .sval  { color: var(--muted); }
+    .seg-stat.total    .sval  { color: var(--text); }
+    /* Matrix */
+    .seg-matrix-wrap  { overflow-x: auto; margin-bottom: 28px; }
+    .seg-matrix-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 8px; }
+    .seg-matrix { border-collapse: collapse; font-size: .7rem; }
+    .seg-matrix th, .seg-matrix td { padding: 3px 5px; text-align: center; border: 1px solid var(--border); white-space: nowrap; }
+    .seg-matrix th.row-hdr { text-align: right; font-family: monospace; color: var(--muted); background: var(--panel); min-width: 90px; font-weight: 400; }
+    .seg-matrix th.col-hdr { font-family: monospace; color: var(--muted); background: var(--panel); writing-mode: vertical-lr; transform: rotate(180deg); height: 72px; vertical-align: bottom; font-weight: 400; }
+    .seg-matrix td.cell-self    { background: #21262d; }
+    .seg-matrix td.cell-routed  { background: #7c4f0044; cursor: pointer; }
+    .seg-matrix td.cell-acl     { background: #1f6feb44; cursor: pointer; }
+    .seg-matrix td.cell-iso     { background: #3fb95018; }
+    .seg-matrix td.cell-routed:hover { background: #7c4f0088; }
+    .seg-matrix td.cell-acl:hover    { background: #1f6feb88; }
+    .matrix-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; font-size: .75rem; }
+    .ml-item { display: flex; align-items: center; gap: 5px; }
+    .ml-dot  { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    /* VLAN cards */
+    .seg-vlan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .seg-vlan-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg-vlan-card.border-iso    { border-left: 4px solid var(--accent2); }
+    .seg-vlan-card.border-routed { border-left: 4px solid #f0883e; }
+    .seg-vlan-card.border-acl    { border-left: 4px solid var(--accent); }
+    .seg-vlan-card.border-nol3   { border-left: 4px solid var(--border); }
+    .seg-card-hdr { background: #1c2128; padding: 9px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+    .seg-vid  { font-size: .85rem; font-weight: 700; color: var(--text); }
+    .seg-vname { font-size: .78rem; color: var(--muted); }
+    .seg-type-badge { font-size: .65rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; margin-left: auto; }
+    .stb-iso    { background: #3fb95033; color: var(--accent2); }
+    .stb-routed { background: #f0883e33; color: #f0883e; }
+    .stb-acl    { background: #1f6feb33; color: var(--accent); }
+    .stb-nol3   { background: var(--border); color: var(--muted); }
+    .seg-card-body { padding: 10px 14px; font-size: .78rem; }
+    .seg-row { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 5px; flex-wrap: wrap; }
+    .seg-row-lbl { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); min-width: 68px; flex-shrink: 0; margin-top: 1px; }
+    .seg-peers { display: flex; gap: 4px; flex-wrap: wrap; }
+    .seg-peer { font-size: .7rem; padding: 1px 6px; border-radius: 4px; background: #f0883e22; color: #f0883e; border: 1px solid #f0883e44; font-family: monospace; }
+    .seg-peer.acl-peer { background: #1f6feb22; color: var(--accent); border-color: #1f6feb44; }
+    .seg-acl-badge { font-size: .7rem; padding: 1px 7px; border-radius: 4px; background: #1f6feb22; color: var(--accent); border: 1px solid #1f6feb44; font-family: monospace; }
+    /* Trunk analysis */
+    .trunk-section-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 10px; }
+    .trunk-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+    .trunk-row { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+    .trunk-name { font-size: .82rem; font-family: monospace; color: var(--text); margin-bottom: 4px; font-weight: 600; }
+    .trunk-desc { font-size: .72rem; color: var(--muted); margin-bottom: 6px; }
+    .trunk-vlans { display: flex; gap: 4px; flex-wrap: wrap; }
+    .trunk-vlan-chip { font-size: .68rem; padding: 1px 6px; border-radius: 4px; background: var(--tag-bg); color: var(--accent); border: 1px solid #1f6feb44; font-family: monospace; }
+
+    /* ── VLAN Search & IP Lookup ── */
+    .lookup-wrap { max-width: 820px; margin: 0 auto; }
+    .lookup-hero { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 28px 28px 22px; margin-bottom: 22px; }
+    .lookup-hero h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .lookup-hero p  { font-size: .8rem; color: var(--muted); margin-bottom: 16px; }
+    .lookup-input-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .lookup-options { margin-top: 10px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .lookup-opt { display: inline-flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--muted); cursor: pointer; user-select: none; }
+    .lookup-opt input { accent-color: #58a6ff; cursor: pointer; }
+    .analyze-link { color: #79c0ff; cursor: pointer; text-decoration: underline dotted #58a6ff88; text-underline-offset: 2px; }
+    .analyze-link:hover { color: #a5d6ff; text-decoration-color: #a5d6ff; }
+    .src-btn { font-size: .68rem; border: 1px solid #1f6feb55; background: #1f6feb22; color: var(--accent); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+    .src-btn:hover { background: #1f6feb33; }
+    .src-modal { position: fixed; inset: 0; background: #00000099; display: none; align-items: center; justify-content: center; z-index: 1000; padding: 18px; }
+    .src-modal.open { display: flex; }
+    .src-card { width: min(980px, 100%); max-height: 86vh; overflow: hidden; background: #0d1117; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 18px 50px #00000077; }
+    .src-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border); background: #161b22; }
+    .src-title { font-size: .85rem; color: var(--text); }
+    .src-close { border: 1px solid var(--border); background: #0d1117; color: var(--muted); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+    .src-close:hover { color: var(--text); border-color: #30363d; }
+    .src-body { max-height: calc(86vh - 56px); overflow: auto; padding: 0; }
+    .src-line { display: grid; grid-template-columns: 76px 1fr; gap: 0; border-bottom: 1px solid #21262d; font-family: Consolas, monospace; font-size: .76rem; }
+    .src-ln { background: #161b22; color: var(--muted); text-align: right; padding: 7px 10px; border-right: 1px solid #21262d; user-select: none; }
+    .src-txt { padding: 7px 10px; white-space: pre-wrap; word-break: break-word; color: #c9d1d9; }
+    .src-empty { padding: 16px; color: var(--muted); font-size: .8rem; }
+    .cred-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .cred-note { font-size: .76rem; color: var(--muted); }
+    .cred-device-title { font-size: .9rem; margin: 16px 0 8px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .cred-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .cred-stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+    .cred-stat .k { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .cred-stat .v { font-size: 1rem; font-weight: 700; color: var(--accent); margin-top: 4px; }
+    .cred-plain { color: #f0883e; font-family: Consolas, monospace; font-size: .75rem; }
+    .cred-mask { color: var(--muted); font-family: Consolas, monospace; font-size: .75rem; }
+    .rel-graph-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+    .rel-graph-title { font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+    .rel-graph-stage { position: relative; width: 100%; min-height: 640px; border-radius: 8px; background: #11161d; border: 1px solid #243041; overflow: hidden; }
+    .rel-graph-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .rel-node { position: absolute; transform: translate(-50%, -50%); width: 172px; background: #161b22; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; text-align: center; box-shadow: var(--shadow); }
+    .rel-node .n-title { font-size: .76rem; color: var(--text); font-weight: 700; line-height: 1.18; overflow-wrap: anywhere; }
+    .rel-node .n-sub { font-size: .66rem; color: var(--muted); margin-top: 3px; line-height: 1.22; overflow-wrap: anywhere; }
+    .rel-node.center { border: 2px solid var(--accent2); background: #102115; min-width: 170px; }
+    .rel-node.vlan { border-color: #58a6ff66; }
+    .rel-node.device { border-color: #d2a8ff66; }
+    .rel-node.net { border-color: #3fb95066; }
+    .rel-node.route { border-color: #f7816666; }
+    .rel-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: .72rem; color: var(--muted); margin-top: 8px; }
+    .rel-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .rel-empty { color: var(--muted); font-size: .82rem; text-align: center; padding: 24px; }
+    .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid #1f6feb55; background: #1f6feb22; color: var(--accent); cursor: pointer; font-size: .66rem; font-weight: 700; line-height: 1; vertical-align: middle; margin-left: 4px; }
+    .info-btn:hover { background: #1f6feb33; }
+    .info-modal { position: fixed; inset: 0; background: #00000099; display: none; align-items: center; justify-content: center; z-index: 1001; padding: 18px; }
+    .info-modal.open { display: flex; }
+    .info-card { width: min(640px, 100%); background: #0d1117; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 18px 50px #00000077; overflow: hidden; }
+    .info-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border); background: #161b22; }
+    .info-title { font-size: .86rem; color: var(--text); }
+    .info-body { padding: 14px; color: #c9d1d9; font-size: .82rem; line-height: 1.55; white-space: pre-wrap; }
+    .lookup-input { flex: 1; min-width: 200px; background: #010409; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: .92rem; outline: none; font-family: 'Consolas', monospace; }
+    .lookup-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #1f6feb22; }
+    .lookup-btn { padding: 10px 24px; background: var(--accent); color: #0d1117; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; font-size: .88rem; transition: opacity .2s; white-space: nowrap; }
+    .lookup-btn:hover { opacity: .85; }
+    .lookup-result { margin-top: 18px; }
+    .lr-card { background: #0d1117; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .lr-header { background: #1c2128; padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .lr-vlan-id { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
+    .lr-vlan-name { font-size: .9rem; color: var(--text); }
+    .lr-device-tag { font-size: .72rem; padding: 2px 8px; background: var(--tag-bg); color: var(--accent); border-radius: 4px; border: 1px solid #1f6feb44; margin-left: auto; }
+    .lr-body { padding: 16px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:600px){ .lr-body { grid-template-columns: 1fr; } }
+    .lr-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 6px; }
+    .lr-value { font-size: .8rem; }
+    .lr-value code { font-family: monospace; color: var(--accent2); font-size: .8rem; }
+    .lr-access-block { background: #1c2128; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid var(--accent); }
+    .lr-access-block.local { border-left-color: var(--accent2); }
+    .lr-access-title { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+    .lr-access-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; font-size: .78rem; }
+    .lr-net-row { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; font-size: .78rem; }
+    .lr-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .lr-no-result { text-align: center; padding: 40px; }
+    .lr-no-result .big { font-size: 2rem; margin-bottom: 8px; }
+    .lr-no-result p { color: var(--muted); font-size: .88rem; }
+    .lr-match-highlight { background: #f0883e33; border-radius: 3px; padding: 0 3px; color: #f0883e; font-weight: 700; }
+    .vlan-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin-top: 14px; }
+    .vlan-list-item { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: border-color .15s; display: flex; align-items: center; gap: 10px; }
+    .vlan-list-item:hover { border-color: var(--accent); }
+    .vlan-list-id { font-size: .9rem; font-weight: 700; color: var(--accent); min-width: 52px; }
+    .vlan-list-name { font-size: .82rem; color: var(--text); }
+    .vlan-list-net { font-size: .72rem; color: var(--accent2); font-family: monospace; }
+    .ip-in-vlan-badge { background: #f0883e33; border: 1px solid #f0883e66; border-radius: 4px; padding: 1px 7px; font-size: .7rem; color: #f0883e; font-family: monospace; margin-left: auto; }
+    .lr-analysis { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); grid-column: 1 / -1; }
+    .lr-analysis-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 8px; }
+    .lr-analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media(max-width:600px){ .lr-analysis-grid { grid-template-columns: 1fr; } }
+    .lr-analysis-box { background: #161b22; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .lr-analysis-box .lbl { font-size: .67rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+    .lr-analysis-box .val { font-size: .76rem; line-height: 1.45; }
+    .lr-mini-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lr-chip { font-size: .68rem; padding: 1px 6px; border-radius: 999px; border: 1px solid #1f6feb44; background: #1f6feb22; color: var(--accent); font-family: monospace; }
+    .lr-rule { font-family: monospace; font-size: .7rem; color: #c9d1d9; margin-bottom: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="8" fill="#1f6feb33"/>
+    <circle cx="18" cy="18" r="5" fill="#58a6ff"/>
+    <circle cx="6"  cy="10" r="3" fill="#3fb950"/>
+    <circle cx="30" cy="10" r="3" fill="#3fb950"/>
+    <circle cx="6"  cy="26" r="3" fill="#d2a8ff"/>
+    <circle cx="30" cy="26" r="3" fill="#d2a8ff"/>
+    <line x1="18" y1="13" x2="6"  y2="10" stroke="#58a6ff" stroke-width="1.5"/>
+    <line x1="18" y1="13" x2="30" y2="10" stroke="#58a6ff" stroke-width="1.5"/>
+    <line x1="18" y1="23" x2="6"  y2="26" stroke="#58a6ff" stroke-width="1.5"/>
+    <line x1="18" y1="23" x2="30" y2="26" stroke="#58a6ff" stroke-width="1.5"/>
+  </svg>
+  <div>
+    <h1>Network Devices Configuration Analyzer</h1>
+    <p>Cisco IOS / IOS-XE / NX-OS &mdash; Core Switch &amp; Router</p>
+  </div>
+  <div class="header-credit">Built by Majid Alkind</div>
+</header>
+
+<div class="upload-zone">
+  <div class="upload-grid" id="upload-grid">
+    <!-- Cards added dynamically -->
+  </div>
+  <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap">
+    <button class="btn-sm" onclick="addDeviceCard()">+ Add Device</button>
+    <button class="btn btn-primary" onclick="parseAndRender()">&#9654; Map Network</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+  </div>
+</div>
+
+<div id="results">
+  <div class="export-bar">
+    <button class="btn-sm" onclick="exportActiveTab()">&#8595; Export Selected</button>
+    <button class="btn-sm" onclick="printActiveTab()">&#128438; Print Selected</button>
+    <label class="lookup-opt" style="margin-left:auto"><input type="checkbox" id="global-click-analyze" checked /> Click VLAN/IP anywhere to analyze</label>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">&#128200; Overview</div>
+    <div class="tab" onclick="switchTab('vlans')">&#128205; VLANs</div>
+    <div class="tab" onclick="switchTab('interfaces')">&#128268; Interfaces</div>
+    <div class="tab" onclick="switchTab('routes')">&#128260; Routes</div>
+    <div class="tab" onclick="switchTab('relationship')">&#129517; Relationship Map</div>
+    <div class="tab" onclick="switchTab('relgraph')">&#128200; Relationship Graph</div>
+    <div class="tab" onclick="switchTab('credentials')">&#128274; Credentials Audit</div>
+    <div class="tab" onclick="switchTab('audit')">&#128737; Config Audit</div>
+    <div class="tab" onclick="switchTab('versions')">&#128220; Version Collector</div>
+    <div class="tab" onclick="switchTab('topology')">&#127760; Topology Map</div>
+    <div class="tab" onclick="switchTab('routing')">&#128257; Routing Protocols</div>
+    <div class="tab" onclick="switchTab('vlanmap')">&#128640; VLAN → Router Map</div>
+    <div class="tab" onclick="switchTab('vrfmap')">&#127758; VRF Map</div>
+    <div class="tab" onclick="switchTab('segmentation')">&#128737; VLAN Segmentation</div>
+    <div class="tab" onclick="switchTab('vlansearch')">&#128269; VLAN Search</div>
+    <div class="tab" onclick="switchTab('iplookup')">&#128205; IP Lookup</div>
+  </div>
+
+  <!-- Overview -->
+  <div id="tab-overview" class="tab-panel active">
+    <div class="device-cards" id="device-summary-cards"></div>
+  </div>
+
+  <!-- VLANs -->
+  <div id="tab-vlans" class="tab-panel">
+    <div class="search-row">
+      <input id="vlan-search" type="text" placeholder="Search VLAN ID, name, network..." oninput="filterTable('vlan-table', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table id="vlan-table">
+        <thead>
+          <tr>
+            <th>Device <button class="info-btn" onclick="showInfo('Device', 'The hostname of the device where this VLAN was found.')">i</button></th><th>VLAN ID <button class="info-btn" onclick="showInfo('VLAN ID', 'The VLAN number configured on the switch or router sub-interface.')">i</button></th><th>Name <button class="info-btn" onclick="showInfo('VLAN Name', 'The configured VLAN name or interface description used to label the segment.')">i</button></th><th>SVI Network <button class="info-btn" onclick="showInfo('SVI Network', 'The subnet learned from the Layer 3 VLAN interface, such as interface Vlan118.')">i</button></th><th>Gateway IP <button class="info-btn" onclick="showInfo('Gateway IP', 'The IP address configured on the VLAN interface. Hosts in the VLAN usually use this as their default gateway.')">i</button></th><th>Interfaces <button class="info-btn" onclick="showInfo('Interfaces', 'Switch access ports or trunk interfaces associated with this VLAN.')">i</button></th><th>Source <button class="info-btn" onclick="showInfo('Source Lines', 'Shows the exact config lines and line numbers that created this result.')">i</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Interfaces -->
+  <div id="tab-interfaces" class="tab-panel">
+    <div class="search-row">
+      <input id="if-search" type="text" placeholder="Search interface, IP, description..." oninput="filterTable('if-table', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table id="if-table">
+        <thead>
+          <tr>
+            <th>Device <button class="info-btn" onclick="showInfo('Device', 'The device where this interface was parsed from.')">i</button></th><th>Interface <button class="info-btn" onclick="showInfo('Interface', 'The exact interface name from the config, for example Vlan118 or GigabitEthernet1/0/1.')">i</button></th><th>Description <button class="info-btn" onclick="showInfo('Description', 'Optional description text configured under the interface.')">i</button></th><th>IP / Prefix <button class="info-btn" onclick="showInfo('IP / Prefix', 'The interface IP address and prefix length derived from the subnet mask.')">i</button></th><th>Network <button class="info-btn" onclick="showInfo('Network', 'The subnet calculated from the interface IP and mask.')">i</button></th><th>VLAN <button class="info-btn" onclick="showInfo('VLAN', 'The VLAN number associated with the interface, either from the interface name, access VLAN, or dot1Q tag.')">i</button></th><th>Mode <button class="info-btn" onclick="showInfo('Mode', 'Switchport mode such as access or trunk. Routed means the interface has an IP address but no switchport mode.')">i</button></th><th>VRF <button class="info-btn" onclick="showInfo('VRF', 'The virtual routing table assigned to the interface. Global means the default routing table.')">i</button></th><th>Status <button class="info-btn" onclick="showInfo('Status', 'Administrative state parsed from the interface. Shutdown means disabled in config.')">i</button></th><th>Source <button class="info-btn" onclick="showInfo('Source Lines', 'Shows the exact config lines and line numbers that created this interface result.')">i</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Routes -->
+  <div id="tab-routes" class="tab-panel">
+    <div class="search-row">
+      <input id="rt-search" type="text" placeholder="Search network, next-hop, VRF..." oninput="filterTable('rt-table', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table id="rt-table">
+        <thead>
+          <tr>
+            <th>Device <button class="info-btn" onclick="showInfo('Device', 'The device where the static route was found.')">i</button></th><th>VRF <button class="info-btn" onclick="showInfo('VRF', 'The routing table that owns the route. Global means the default routing table.')">i</button></th><th>Network <button class="info-btn" onclick="showInfo('Network', 'The destination network for the static route.')">i</button></th><th>Mask / CIDR <button class="info-btn" onclick="showInfo('Mask / CIDR', 'The subnet mask and prefix length representation of the route destination.')">i</button></th><th>Next Hop <button class="info-btn" onclick="showInfo('Next Hop', 'The IP address used to forward traffic toward that destination.')">i</button></th><th>Name <button class="info-btn" onclick="showInfo('Route Name', 'Optional descriptive name configured on the static route.')">i</button></th><th>Source <button class="info-btn" onclick="showInfo('Source Lines', 'Shows the exact config lines and line numbers that created this route result.')">i</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Relationship Map (Table) -->
+  <div id="tab-relationship" class="tab-panel">
+    <div class="search-row">
+      <input id="relationship-search" type="text" placeholder="Search by VLAN ID, VLAN name, subnet, gateway IP, VRF, router path..." oninput="renderRelationshipMap()"/>
+    </div>
+    <div class="table-wrap">
+      <table id="relationship-table">
+        <thead>
+          <tr>
+            <th>Device</th>
+            <th>VLAN ID</th>
+            <th>VLAN Name</th>
+            <th>Subnets</th>
+            <th>Gateway IPs</th>
+            <th>L3 Interfaces</th>
+            <th>Router Path</th>
+            <th>VRF</th>
+            <th>Reachability</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Relationship Graph (Visual / Draggable) -->
+  <div id="tab-relgraph" class="tab-panel">
+    <div class="search-row">
+      <input id="relgraph-search" type="text" placeholder="Filter: VLAN ID, name, IP, subnet, VRF..." oninput="renderRelationshipGraph()"/>
+      <span style="color:var(--muted);font-size:.8rem;margin-left:12px">&#9749; Drag nodes freely &bull; Path: VLAN &#8594; Switch &#8594; Router &#8594; Subnet</span>
+    </div>
+    <div class="rel-graph-wrap">
+      <div class="rel-graph-title">Visual Relationship Graph &mdash; drag any node to rearrange</div>
+      <div id="relationship-graph" class="rel-graph-stage"></div>
+      <div class="rel-legend">
+        <span><span class="rel-dot" style="background:#58a6ff"></span>VLAN</span>
+        <span><span class="rel-dot" style="background:#8b949e"></span>Switch / L2&ndash;L3 Device</span>
+        <span><span class="rel-dot" style="background:#d2a8ff"></span>Router / Gateway</span>
+        <span><span class="rel-dot" style="background:#3fb950"></span>Subnet</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credentials -->
+  <div id="tab-credentials" class="tab-panel">
+    <div class="cred-toolbar">
+      <label class="lookup-opt"><input type="checkbox" id="cred-show-values" onchange="renderCredentials()" /> Show stored values</label>
+      <label class="lookup-opt"><input type="checkbox" id="cred-show-decoded" onchange="renderCredentials()" /> Show decoded reversible values (Type 7)</label>
+      <span class="cred-note">One-way hashes (Type 5/8/9) are not decoded.</span>
+    </div>
+    <div id="credentials-content"></div>
+  </div>
+
+  <!-- Config Audit -->
+  <div id="tab-audit" class="tab-panel">
+    <div id="audit-summary" class="cred-grid" style="margin-bottom:12px"></div>
+    <div class="search-row">
+      <input id="audit-search" type="text" placeholder="Filter findings by device, severity, category, or finding text..." oninput="filterTable('audit-table', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table id="audit-table">
+        <thead>
+          <tr>
+            <th>Device</th>
+            <th>Severity</th>
+            <th>Category</th>
+            <th>Finding</th>
+            <th>Source</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Version Collector -->
+  <div id="tab-versions" class="tab-panel">
+    <div id="version-summary" class="cred-grid" style="margin-bottom:12px"></div>
+    <div class="search-row">
+      <input id="version-search" type="text" placeholder="Filter by device, OS version, software hint, platform, or evidence..." oninput="filterTable('version-table', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table id="version-table">
+        <thead>
+          <tr>
+            <th>Device</th>
+            <th>Type</th>
+            <th>OS Version</th>
+            <th>Software Hint</th>
+            <th>Sample Revision</th>
+            <th>Evidence</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Topology -->
+  <div id="tab-topology" class="tab-panel">
+    <div id="topology-wrap">
+      <div class="empty-state">No data yet.</div>
+    </div>
+  </div>
+
+  <!-- Routing Protocols -->
+  <div id="tab-routing" class="tab-panel">
+    <div id="routing-content"></div>
+  </div>
+
+  <!-- VLAN Router Map -->
+  <div id="tab-vlanmap" class="tab-panel">
+    <div id="vlanmap-content"></div>
+  </div>
+
+  <!-- VRF Map -->
+  <div id="tab-vrfmap" class="tab-panel">
+    <div id="vrfmap-content"></div>
+  </div>
+
+  <!-- VLAN Segmentation -->
+  <div id="tab-segmentation" class="tab-panel">
+    <div id="segmentation-content"></div>
+  </div>
+
+  <!-- VLAN Search -->
+  <div id="tab-vlansearch" class="tab-panel">
+    <div class="lookup-wrap">
+      <div class="lookup-hero">
+        <h2>&#128269; Search VLAN by Name or ID</h2>
+        <p>Type a VLAN name, ID, or subnet to instantly find it and see full details.</p>
+        <div class="lookup-input-row">
+          <input class="lookup-input" id="vlansearch-input" type="text" placeholder="e.g.  MANAGEMENT  or  10  or  10.0.20" oninput="doVlanSearch()" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+      <div id="vlansearch-result"></div>
+    </div>
+  </div>
+
+  <!-- IP Lookup -->
+  <div id="tab-iplookup" class="tab-panel">
+    <div class="lookup-wrap">
+      <div class="lookup-hero">
+        <h2>&#128205; IP Address Lookup</h2>
+        <p>Enter any IP address to find which VLAN it belongs to, its gateway, and which devices/VRFs can reach it.</p>
+        <div class="lookup-input-row">
+          <input class="lookup-input" id="iplookup-input" type="text" placeholder="e.g.  10.0.30.55" autocomplete="off" spellcheck="false"
+            oninput="doIpLookup()" onkeydown="if(event.key==='Enter') doIpLookup()" />
+          <button class="lookup-btn" onclick="doIpLookup()">&#128269; Lookup</button>
+        </div>
+        <div class="lookup-options">
+          <label class="lookup-opt"><input type="checkbox" id="iplookup-analyze-all" onchange="doIpLookup()" /> Analyze all VLAN data in result</label>
+        </div>
+      </div>
+      <div id="iplookup-result"></div>
+    </div>
+  </div>
+</div>
+
+<div id="source-modal" class="src-modal" onclick="if(event.target.id==='source-modal') closeSourceModal()">
+  <div class="src-card">
+    <div class="src-head">
+      <div id="source-modal-title" class="src-title">Source Lines</div>
+      <button class="src-close" onclick="closeSourceModal()">Close</button>
+    </div>
+    <div id="source-modal-body" class="src-body"></div>
+  </div>
+</div>
+
+<div id="info-modal" class="info-modal" onclick="if(event.target.id==='info-modal') closeInfo()">
+  <div class="info-card">
+    <div class="info-head">
+      <div id="info-modal-title" class="info-title">Explanation</div>
+      <button class="src-close" onclick="closeInfo()">Close</button>
+    </div>
+    <div id="info-modal-body" class="info-body"></div>
+  </div>
+</div>
+
+<script src="parser.js"></script>
+<script>
+// ── Device card management ────────────────────────────────────────────────
+let cardCount = 0;
+
+function addDeviceCard(label) {
+  cardCount++;
+  const id = `dev-${cardCount}`;
+  const defaultLabel = label || (cardCount === 1 ? 'Core Switch' : cardCount === 2 ? 'Router' : `Device ${cardCount}`);
+  const div = document.createElement('div');
+  div.className = 'upload-card';
+  div.id = `card-${id}`;
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <label>${defaultLabel}</label>
+      <span style="cursor:pointer;color:var(--muted);font-size:0.8rem" onclick="removeCard('card-${id}')">&#10005; Remove</span>
+    </div>
+    <div class="device-name-row">
+      <input type="text" placeholder="Device hostname (optional)" id="hostname-${id}" />
+    </div>
+    <label class="file-btn" for="file-${id}">&#128193; Choose File (.txt / .cfg / .conf)</label>
+    <input type="file" id="file-${id}" accept=".txt,.cfg,.conf,.log" onchange="handleFile('${id}', this)" />
+    <div class="file-name" id="fname-${id}">No file selected</div>
+    <textarea class="config-paste" id="paste-${id}" placeholder="— or paste config here —"></textarea>
+  `;
+  // drag & drop
+  div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over'); });
+  div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+  div.addEventListener('drop', e => {
+    e.preventDefault();
+    div.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFileIntoCard(id, file);
+  });
+  document.getElementById('upload-grid').appendChild(div);
+}
+
+function removeCard(cardId) {
+  const el = document.getElementById(cardId);
+  if (el) el.remove();
+}
+
+function handleFile(id, input) {
+  if (input.files[0]) loadFileIntoCard(id, input.files[0]);
+}
+
+function loadFileIntoCard(id, file) {
+  document.getElementById(`fname-${id}`).textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById(`paste-${id}`).value = e.target.result; };
+  reader.readAsText(file);
+  // auto-fill hostname from filename
+  const hn = document.getElementById(`hostname-${id}`);
+  if (!hn.value) hn.value = file.name.replace(/\.[^/.]+$/, '');
+}
+
+// ── Parse & Render ────────────────────────────────────────────────────────
+let parsedDevices = [];
+let clickAnalyzeBound = false;
+
+function parseAndRender() {
+  parsedDevices = [];
+  const cards = document.querySelectorAll('[id^="card-dev-"]');
+  cards.forEach(card => {
+    const id = card.id.replace('card-', '');
+    const text = document.getElementById(`paste-${id}`)?.value?.trim();
+    const hostname = document.getElementById(`hostname-${id}`)?.value?.trim();
+    if (text) {
+      const data = ConfigParser.parseAll(text, hostname);
+      data.rawConfig = text;
+      data.rawLines = text.split(/\r?\n/);
+      parsedDevices.push(data);
+    }
+  });
+
+  if (!parsedDevices.length) {
+    alert('Please load or paste at least one config file.');
+    return;
+  }
+
+  renderAll();
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderAll() {
+  renderOverview();
+  renderVlans();
+  renderInterfaces();
+  renderRoutes();
+  renderRelationshipMap();
+  renderCredentials();
+  renderAudit();
+  renderVersionCollector();
+  renderTopology();
+  renderRouting();
+  renderVlanRouterMap();
+  renderVrfMap();
+  renderSegmentation();
+  // clear search results when new configs are loaded
+  const vsr = document.getElementById('vlansearch-result');
+  const ilr = document.getElementById('iplookup-result');
+  if (vsr) vsr.innerHTML = '';
+  if (ilr) ilr.innerHTML = '';
+  const vsi = document.getElementById('vlansearch-input');
+  const ili = document.getElementById('iplookup-input');
+  const ila = document.getElementById('iplookup-analyze-all');
+  if (vsi) vsi.value = '';
+  if (ili) ili.value = '';
+  if (ila) ila.checked = false;
+  bindClickAnalyzeMode();
+  applyClickableAnalysis(document.getElementById('results'));
+}
+
+// ── VLAN Search ───────────────────────────────────────────────────────────
+function doVlanSearch() {
+  if (!parsedDevices.length) return;
+  const raw = (document.getElementById('vlansearch-input').value || '').trim();
+  const container = document.getElementById('vlansearch-result');
+  if (!raw) { container.innerHTML = ''; return; }
+  const q = raw.toLowerCase();
+
+  // collect matching vlans across all devices
+  const hits = [];
+  parsedDevices.forEach(dev => {
+    dev.vlans.forEach(vlan => {
+      const idStr = String(vlan.id);
+      const nameStr = (vlan.name || '').toLowerCase();
+      const netStr = (vlan.networks || []).map(n => n.cidr).join(' ').toLowerCase();
+      if (idStr === q || nameStr.includes(q) || netStr.includes(q)) {
+        hits.push({ dev, vlan });
+      }
+    });
+  });
+
+  if (!hits.length) {
+    container.innerHTML = `<div class="lr-no-result"><div class="big">&#128269;</div><p>No VLAN matched <strong>${esc(raw)}</strong></p></div>`;
+    return;
+  }
+
+  // build detail cards
+  const vlanMap = buildVlanRouterMap(parsedDevices);
+  let html = '';
+  hits.forEach(({ dev, vlan }) => {
+    const mapEntry = getVlanMapEntry(vlanMap, dev.deviceName, vlan.id);
+    html += buildVlanDetailCard(dev, vlan, mapEntry, null);
+  });
+  container.innerHTML = html;
+  applyClickableAnalysis(container);
+}
+
+// ── IP Lookup ─────────────────────────────────────────────────────────────
+function doIpLookup() {
+  if (!parsedDevices.length) return;
+  const raw = (document.getElementById('iplookup-input').value || '').trim();
+  const container = document.getElementById('iplookup-result');
+  const analyzeAll = !!document.getElementById('iplookup-analyze-all')?.checked;
+  if (!raw) { container.innerHTML = ''; return; }
+
+  // validate rough IP format
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) {
+    container.innerHTML = `<div class="lr-no-result"><div class="big">&#10060;</div><p>Please enter a valid IPv4 address (e.g. 10.0.20.50)</p></div>`;
+    return;
+  }
+
+  const hits = [];
+  const vlanMap = buildVlanRouterMap(parsedDevices);
+
+  parsedDevices.forEach(dev => {
+    dev.vlans.forEach(vlan => {
+      (vlan.networks || []).forEach(net => {
+        if (net.ip && net.mask && ipInSubnet(raw, net.network, net.mask)) {
+          hits.push({ dev, vlan, net });
+        }
+      });
+    });
+    // also check non-vlan interfaces (e.g. loopback, routed ports)
+    dev.interfaces.forEach(iface => {
+      if (iface.ip && iface.mask && ipInSubnet(raw, iface.network, iface.mask)) {
+        // avoid duplicates already caught via vlan
+        const alreadyCovered = hits.some(h => h.dev === dev && h.net && h.net.ip === iface.ip);
+        if (!alreadyCovered) {
+          hits.push({ dev, vlan: null, net: { ip: iface.ip, mask: iface.mask, cidr: iface.cidr, network: iface.network }, iface });
+        }
+      }
+    });
+  });
+
+  if (!hits.length) {
+    container.innerHTML = `<div class="lr-no-result"><div class="big">&#128205;</div><p>IP <strong>${esc(raw)}</strong> does not fall within any subnet in the loaded configs.</p></div>`;
+    return;
+  }
+
+  let html = '';
+  hits.forEach(({ dev, vlan, net, iface }) => {
+    if (vlan) {
+      const mapEntry = getVlanMapEntry(vlanMap, dev.deviceName, vlan.id);
+      html += buildVlanDetailCard(dev, vlan, mapEntry, raw, { analyzeAll });
+    } else if (iface) {
+      html += buildIfaceDetailCard(dev, iface, raw);
+    }
+  });
+  container.innerHTML = html;
+  applyClickableAnalysis(container);
+}
+
+function isValidIPv4(ip) {
+  const parts = ip.split('.').map(Number);
+  return parts.length === 4 && parts.every(n => !Number.isNaN(n) && n >= 0 && n <= 255);
+}
+
+function applyClickableAnalysis(root) {
+  if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      if (p.closest('.analyze-link,script,style,textarea,input,button,select,option,label')) return NodeFilter.FILTER_REJECT;
+      if (!/(?:\bVLAN[\s:-]*\d+\b|\b\d{1,3}(?:\.\d{1,3}){3}\b)/i.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes = [];
+  let n;
+  while ((n = walker.nextNode())) textNodes.push(n);
+
+  const re = /\bVLAN[\s:-]*(\d{1,4})\b|\b(\d{1,3}(?:\.\d{1,3}){3})\b/gi;
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue;
+    re.lastIndex = 0;
+    let m;
+    let last = 0;
+    let changed = false;
+    const frag = document.createDocumentFragment();
+
+    while ((m = re.exec(text)) !== null) {
+      const [full, vlanId, ip] = m;
+      const start = m.index;
+      if (start > last) frag.appendChild(document.createTextNode(text.slice(last, start)));
+
+      let span = null;
+      if (vlanId) {
+        span = document.createElement('span');
+        span.className = 'analyze-link';
+        span.dataset.analyzeType = 'vlan';
+        span.dataset.vlanId = vlanId;
+        span.title = `Analyze VLAN ${vlanId}`;
+        span.textContent = full;
+        changed = true;
+      } else if (ip && isValidIPv4(ip)) {
+        span = document.createElement('span');
+        span.className = 'analyze-link';
+        span.dataset.analyzeType = 'ip';
+        span.dataset.ip = ip;
+        span.title = `Analyze IP ${ip}`;
+        span.textContent = full;
+        changed = true;
+      }
+
+      if (span) frag.appendChild(span);
+      else frag.appendChild(document.createTextNode(full));
+      last = re.lastIndex;
+    }
+
+    if (!changed) return;
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  });
+}
+
+function bindClickAnalyzeMode() {
+  if (clickAnalyzeBound) return;
+  const resultsEl = document.getElementById('results');
+  if (!resultsEl) return;
+
+  resultsEl.addEventListener('click', (ev) => {
+    const target = ev.target && ev.target.closest ? ev.target.closest('.analyze-link') : null;
+    if (!target) return;
+    const enabled = !!document.getElementById('global-click-analyze')?.checked;
+    if (!enabled) return;
+
+    const type = target.dataset.analyzeType;
+    if (type === 'ip' && target.dataset.ip) {
+      const input = document.getElementById('iplookup-input');
+      if (!input) return;
+      input.value = target.dataset.ip;
+      switchTab('iplookup');
+      doIpLookup();
+      document.getElementById('tab-iplookup')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+
+    if (type === 'vlan' && target.dataset.vlanId) {
+      const input = document.getElementById('vlansearch-input');
+      if (!input) return;
+      input.value = target.dataset.vlanId;
+      switchTab('vlansearch');
+      doVlanSearch();
+      document.getElementById('tab-vlansearch')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+  });
+
+  clickAnalyzeBound = true;
+}
+
+// ── Shared card builder ───────────────────────────────────────────────────
+function getVlanMapEntry(mapData, deviceName, vlanId) {
+  if (!Array.isArray(mapData)) return null;
+  return mapData.find(e => e.sourceDevice === deviceName && e.vlan && e.vlan.id === vlanId) || null;
+}
+
+function escJsStr(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function getDeviceByName(deviceName) {
+  return parsedDevices.find(d => d.deviceName === deviceName) || null;
+}
+
+function makeSourceLine(lineNo, lineText) {
+  return { lineNo, lineText: lineText == null ? '' : String(lineText).trimEnd() };
+}
+
+function buildSourceRows(lines) {
+  if (!lines || !lines.length) {
+    return '<div class="src-empty">No exact source lines found for this item in loaded config.</div>';
+  }
+  return lines
+    .sort((a, b) => a.lineNo - b.lineNo)
+    .map(l => `<div class="src-line"><div class="src-ln">L${l.lineNo}</div><div class="src-txt">${esc(l.lineText)}</div></div>`)
+    .join('');
+}
+
+function openSourceModal(title, lines) {
+  const modal = document.getElementById('source-modal');
+  const body = document.getElementById('source-modal-body');
+  const titleEl = document.getElementById('source-modal-title');
+  titleEl.textContent = title;
+  body.innerHTML = buildSourceRows(lines);
+  modal.classList.add('open');
+}
+
+function closeSourceModal() {
+  document.getElementById('source-modal')?.classList.remove('open');
+}
+
+function showInfo(title, body) {
+  const modal = document.getElementById('info-modal');
+  document.getElementById('info-modal-title').textContent = title;
+  document.getElementById('info-modal-body').textContent = body;
+  modal.classList.add('open');
+}
+
+function closeInfo() {
+  document.getElementById('info-modal')?.classList.remove('open');
+}
+
+function parseAllowedVlanList(line) {
+  const m = line.match(/switchport\s+trunk\s+allowed\s+vlan\s+(.+)/i);
+  if (!m) return [];
+  const raw = m[1].replace(/add\s+/gi, '').trim();
+  const set = new Set();
+  raw.split(',').forEach(part => {
+    const p = part.trim();
+    const range = p.match(/^(\d+)-(\d+)$/);
+    if (range) {
+      const start = Number(range[1]);
+      const end = Number(range[2]);
+      for (let i = start; i <= end; i++) set.add(i);
+    } else if (/^\d+$/.test(p)) {
+      set.add(Number(p));
+    }
+  });
+  return [...set];
+}
+
+function getVlanSourceLines(deviceName, vlanId) {
+  const d = getDeviceByName(deviceName);
+  if (!d || !d.rawLines) return [];
+  const lines = d.rawLines;
+  const out = [];
+  const seen = new Set();
+
+  const add = (idx) => {
+    if (idx < 0 || idx >= lines.length) return;
+    const k = idx + 1;
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push(makeSourceLine(k, lines[idx]));
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (new RegExp(`^\\s*interface\\s+Vlan${vlanId}\\b`, 'i').test(line)) add(i);
+    if (new RegExp(`^\\s*vlan\\s+.*\\b${vlanId}\\b`, 'i').test(line)) add(i);
+    if (new RegExp(`switchport\\s+access\\s+vlan\\s+${vlanId}\\b`, 'i').test(line)) add(i);
+    if (new RegExp(`encapsulation\\s+dot1q\\s+${vlanId}\\b`, 'i').test(line)) add(i);
+    if (/switchport\s+trunk\s+allowed\s+vlan/i.test(line) && parseAllowedVlanList(line).includes(Number(vlanId))) add(i);
+  }
+  return out;
+}
+
+function getInterfaceSourceLines(deviceName, ifaceName) {
+  const d = getDeviceByName(deviceName);
+  if (!d || !d.rawLines) return [];
+  const lines = d.rawLines;
+  const out = [];
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (new RegExp(`^\\s*interface\\s+${ifaceName.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}\\s*$`, 'i').test(lines[i])) {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return out;
+
+  out.push(makeSourceLine(start + 1, lines[start]));
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^\s*interface\s+/i.test(line)) break;
+    if (/^\s*!\s*$/.test(line)) break;
+    if (/^\s*(description|vrf\s+(?:forwarding|member)|ip\s+address|switchport\s+mode|switchport\s+access\s+vlan|encapsulation\s+dot1q|ip\s+access-group|shutdown|no\s+shutdown)\b/i.test(line)) {
+      out.push(makeSourceLine(i + 1, line));
+    }
+  }
+  return out;
+}
+
+function getRouteSourceLines(deviceName, route) {
+  const d = getDeviceByName(deviceName);
+  if (!d || !d.rawLines) return [];
+  const lines = d.rawLines;
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!/^ip\s+route\b/i.test(line)) continue;
+    const hasVrf = route.vrf && route.vrf !== 'global' ? new RegExp(`\\bvrf\\s+${route.vrf}\\b`, 'i').test(line) : true;
+    const hasNetMask = new RegExp(`\\b${route.network}\\s+${route.mask}\\b`).test(line);
+    const hasPrefix = new RegExp(`\\b${route.network}/${route.cidr}\\b`).test(line);
+    const hasNh = new RegExp(`\\b${route.nexthop}\\b`).test(line);
+    if (hasVrf && (hasNetMask || hasPrefix) && hasNh) {
+      out.push(makeSourceLine(i + 1, lines[i]));
+    }
+  }
+  return out;
+}
+
+function showVlanSourceByDevice(deviceName, vlanId) {
+  const lines = getVlanSourceLines(deviceName, vlanId);
+  openSourceModal(`${deviceName} - VLAN ${vlanId} source lines`, lines);
+}
+
+function showInterfaceSourceByDevice(deviceName, ifaceName) {
+  const lines = getInterfaceSourceLines(deviceName, ifaceName);
+  openSourceModal(`${deviceName} - Interface ${ifaceName} source lines`, lines);
+}
+
+function showRouteSourceByDevice(deviceName, network, mask, cidr, nexthop, vrf) {
+  const lines = getRouteSourceLines(deviceName, { network, mask, cidr, nexthop, vrf });
+  openSourceModal(`${deviceName} - Route ${network}/${cidr} source lines`, lines);
+}
+
+function getVlanRoutedPeers(dev, vlanId) {
+  const myL3 = dev.interfaces.filter(i => i.ip && (i.vlan === vlanId || i.dot1qVlan === vlanId));
+  if (!myL3.length) return [];
+  const peers = new Set();
+
+  dev.vlans.forEach(other => {
+    if (other.id === vlanId) return;
+    const otherL3 = dev.interfaces.filter(i => i.ip && (i.vlan === other.id || i.dot1qVlan === other.id));
+    if (otherL3.length) peers.add(other.id);
+  });
+
+  parsedDevices.forEach(otherDev => {
+    if (otherDev === dev) return;
+    const myOnRouter = otherDev.interfaces.filter(i => i.ip && (i.vlan === vlanId || i.dot1qVlan === vlanId));
+    if (!myOnRouter.length) return;
+    dev.vlans.forEach(other => {
+      if (other.id === vlanId) return;
+      const otherOnRouter = otherDev.interfaces.filter(i => i.ip && (i.vlan === other.id || i.dot1qVlan === other.id));
+      if (otherOnRouter.length) peers.add(other.id);
+    });
+  });
+
+  return [...peers].sort((a, b) => a - b);
+}
+
+function buildVlanDeepAnalysis(dev, vlan, mapEntry) {
+  const vlanIfaces = dev.interfaces.filter(i => i.vlan === vlan.id || i.dot1qVlan === vlan.id);
+  const l3Ifaces = vlanIfaces.filter(i => i.ip);
+  const trunkPorts = (dev.trunkLinks || []).filter(t => t.allowedVlans.includes(vlan.id));
+  const accessPorts = dev.interfaces.filter(i => i.mode === 'access' && i.vlan === vlan.id);
+  const peers = getVlanRoutedPeers(dev, vlan.id);
+
+  const aclBindings = [];
+  vlanIfaces.forEach(i => {
+    if (i.aclIn) aclBindings.push({ acl: i.aclIn, dir: 'in', iface: i.name });
+    if (i.aclOut) aclBindings.push({ acl: i.aclOut, dir: 'out', iface: i.name });
+  });
+
+  const uniqueAcls = [...new Set(aclBindings.map(a => a.acl))];
+  const aclHtml = uniqueAcls.length
+    ? uniqueAcls.map(name => {
+        const ruleSet = dev.acls && dev.acls[name] ? dev.acls[name].entries : [];
+        const usedOn = aclBindings.filter(a => a.acl === name).map(a => `${a.dir} on ${a.iface}`).join(', ');
+        const rules = (ruleSet || []).slice(0, 6).map(r => `<div class="lr-rule">${esc(r)}</div>`).join('');
+        const more = (ruleSet || []).length > 6 ? `<div style="font-size:.7rem;color:var(--muted)">... ${ruleSet.length - 6} more rule(s)</div>` : '';
+        return `<div style="margin-bottom:8px"><div class="lr-chip" style="display:inline-block;margin-bottom:4px">${esc(name)}</div><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">${esc(usedOn)}</div>${rules || '<div style="font-size:.72rem;color:var(--muted)">Rules not found in config text.</div>'}${more}</div>`;
+      }).join('')
+    : '<div style="font-size:.74rem;color:var(--muted)">No ACL bound to VLAN interfaces.</div>';
+
+  const pathHtml = (mapEntry && mapEntry.routerAccess && mapEntry.routerAccess.length)
+    ? mapEntry.routerAccess.map(ra => `<div style="font-size:.74rem;margin-bottom:3px"><span class="lr-chip">${esc(ra.gwDeviceName)}</span> via <code>${esc(ra.iface)}</code> (${esc(ra.matchReason)})</div>`).join('')
+    : '<div style="font-size:.74rem;color:var(--muted)">No external gateway path found.</div>';
+
+  return `
+    <div class="lr-analysis">
+      <div class="lr-analysis-title">Full VLAN Analysis</div>
+      <div class="lr-analysis-grid">
+        <div class="lr-analysis-box">
+          <div class="lbl">VLAN Footprint</div>
+          <div class="val">
+            <div>L3 interfaces: <b>${l3Ifaces.length}</b></div>
+            <div>Access ports: <b>${accessPorts.length}</b></div>
+            <div>Trunk links carrying VLAN: <b>${trunkPorts.length}</b></div>
+            <div style="margin-top:6px" class="lr-mini-list">
+              ${l3Ifaces.slice(0, 6).map(i => `<span class="lr-chip">${esc(i.name)}${i.vrfName ? ' [' + esc(i.vrfName) + ']' : ''}</span>`).join('') || '<span style="color:var(--muted)">No L3 interfaces</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="lr-analysis-box">
+          <div class="lbl">Routing Reachability</div>
+          <div class="val">
+            <div>Routed peer VLANs: <b>${peers.length}</b></div>
+            <div class="lr-mini-list" style="margin-top:6px">
+              ${peers.slice(0, 16).map(pid => `<span class="lr-chip">VLAN ${pid}</span>`).join('') || '<span style="color:var(--muted)">None</span>'}
+            </div>
+            <div style="margin-top:8px">Gateway path(s):</div>
+            ${pathHtml}
+          </div>
+        </div>
+        <div class="lr-analysis-box" style="grid-column:1/-1">
+          <div class="lbl">ACL Policy Details</div>
+          <div class="val">${aclHtml}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildVlanDetailCard(dev, vlan, mapEntry, highlightIp, opts = {}) {
+  const nets = (vlan.networks || []);
+  const netHtml = nets.length
+    ? nets.map(n => {
+        const isMatch = highlightIp && ipInSubnet(highlightIp, n.network, n.mask);
+        return `<div class="lr-net-row">
+          <span class="lr-dot" style="background:${isMatch ? '#f0883e' : 'var(--accent2)'}"></span>
+          <code>${esc(n.cidr)}</code>
+          ${isMatch ? `<span class="ip-in-vlan-badge">${esc(highlightIp)} is here</span>` : ''}
+        </div>`;
+      }).join('')
+    : '<span style="color:var(--muted);font-size:.78rem">No SVI / no IP</span>';
+
+  // gateway — SVI ip of this device for this vlan
+  const gwIface = dev.interfaces.find(i =>
+    (i.vlan == vlan.id || i.dot1qVlan == vlan.id) && i.ip && i.mode !== 'trunk' && i.mode !== 'access'
+  ) || dev.interfaces.find(i => i.vlan == vlan.id && i.ip);
+  const gwHtml = gwIface
+    ? `<code>${esc(gwIface.ip)}</code> <span style="color:var(--muted);font-size:.72rem">(${esc(gwIface.name)})</span>`
+    : '<span style="color:var(--muted);font-size:.78rem">Not configured</span>';
+
+  // ACLs on this VLAN's interface
+  let aclHtml = '';
+  const aclIface = dev.interfaces.find(i => (i.vlan == vlan.id || i.dot1qVlan == vlan.id) && (i.aclIn || i.aclOut));
+  if (aclIface) {
+    if (aclIface.aclIn)  aclHtml += `<span class="seg-acl-badge stb-red">IN: ${esc(aclIface.aclIn)}</span> `;
+    if (aclIface.aclOut) aclHtml += `<span class="seg-acl-badge stb-purple">OUT: ${esc(aclIface.aclOut)}</span>`;
+  }
+  if (!aclHtml) aclHtml = '<span style="color:var(--muted);font-size:.78rem">None detected</span>';
+
+  // router access
+  let routerHtml = '';
+  if (mapEntry && mapEntry.routerAccess && mapEntry.routerAccess.length) {
+    routerHtml = mapEntry.routerAccess.map(ri =>
+      `<div class="lr-access-row"><span class="lr-dot" style="background:var(--accent)"></span>
+       <code>${esc(ri.gwDeviceName)}</code> via <code>${esc(ri.iface)}</code>
+       ${ri.matchReason ? `<span class="seg-acl-badge stb-purple">${esc(ri.matchReason)}</span>` : ''}
+       </div>`
+    ).join('');
+  } else {
+    routerHtml = '<span style="color:var(--muted);font-size:.78rem">No router access found</span>';
+  }
+
+  // reachable other networks
+  const allOtherNets = [];
+  const allRoutes = [];
+  if (mapEntry && mapEntry.routerAccess) {
+    mapEntry.routerAccess.forEach(ra => {
+      (ra.otherNets || []).forEach(n => allOtherNets.push(n));
+      (ra.routes || []).forEach(r => allRoutes.push(r));
+    });
+  }
+
+  let reachHtml = '';
+  if (allOtherNets.length || allRoutes.length) {
+    reachHtml = allOtherNets.slice(0, 6).map(n =>
+      `<div class="lr-net-row">
+        <span class="lr-dot" style="background:var(--accent3)"></span>
+        <code>${esc(n.network)}</code>
+        <span style="color:var(--muted);font-size:.72rem">${esc(n.name || '')}</span>
+       </div>`
+    ).join('');
+    reachHtml += allRoutes.slice(0, 6).map(r =>
+      `<div class="lr-net-row">
+        <span class="lr-dot" style="background:var(--accent)"></span>
+        <code>${esc(r.network)}</code>
+        <span style="color:var(--muted);font-size:.72rem">via ${esc(r.nexthop)}${r.vrf && r.vrf !== 'global' ? ' [VRF ' + esc(r.vrf) + ']' : ''}</span>
+       </div>`
+    ).join('');
+
+    const omitted = Math.max(0, allOtherNets.length - 6) + Math.max(0, allRoutes.length - 6);
+    if (omitted) reachHtml += `<div style="color:var(--muted);font-size:.75rem;margin-top:4px">...and ${omitted} more item(s)</div>`;
+  } else {
+    reachHtml = '<span style="color:var(--muted);font-size:.78rem">None</span>';
+  }
+
+  const analysisHtml = opts.analyzeAll ? buildVlanDeepAnalysis(dev, vlan, mapEntry) : '';
+
+  return `
+  <div class="lr-card">
+    <div class="lr-header">
+      <span class="lr-vlan-id">VLAN ${esc(String(vlan.id))}</span>
+      <span class="lr-vlan-name">${esc(vlan.name || '(unnamed)')}</span>
+      <span class="lr-device-tag">&#128421; ${esc(dev.deviceName)}</span>
+      <button class="src-btn" onclick="showVlanSourceByDevice('${escJsStr(dev.deviceName)}', ${vlan.id})">Source Lines</button>
+    </div>
+    <div class="lr-body">
+      <div class="lr-section">
+        <div class="lr-label">Subnets / Networks <button class="info-btn" onclick="showInfo('Subnets / Networks', 'These are the subnets tied to this VLAN. They usually come from the Layer 3 VLAN interface or routed sub-interface.')">i</button></div>
+        <div class="lr-value">${netHtml}</div>
+      </div>
+      <div class="lr-section">
+        <div class="lr-label">Default Gateway (SVI) <button class="info-btn" onclick="showInfo('Default Gateway', 'The VLAN interface IP that endpoints in this subnet use as their default gateway.')">i</button></div>
+        <div class="lr-value">${gwHtml}</div>
+      </div>
+      <div class="lr-section">
+        <div class="lr-label">ACLs Applied <button class="info-btn" onclick="showInfo('ACLs Applied', 'Access control lists bound to the VLAN interface. They can permit or deny traffic entering or leaving the VLAN.')">i</button></div>
+        <div class="lr-value">${aclHtml}</div>
+      </div>
+      <div class="lr-section">
+        <div class="lr-label">Router Access <button class="info-btn" onclick="showInfo('Router Access', 'Router or Layer 3 interface that provides inter-VLAN or upstream access for this VLAN.')">i</button></div>
+        <div class="lr-value">${routerHtml}</div>
+      </div>
+      <div class="lr-section" style="grid-column:1/-1">
+        <div class="lr-label">Reachable Networks (via router) <button class="info-btn" onclick="showInfo('Reachable Networks', 'Other networks and static routes visible through the gateway device associated with this VLAN.')">i</button></div>
+        <div class="lr-value">${reachHtml}</div>
+      </div>
+      ${analysisHtml}
+    </div>
+  </div>`;
+}
+
+function buildIfaceDetailCard(dev, iface, highlightIp) {
+  const isMatch = highlightIp && ipInSubnet(highlightIp, iface.network, iface.mask);
+  return `
+  <div class="lr-card">
+    <div class="lr-header">
+      <span class="lr-vlan-id">${esc(iface.name)}</span>
+      <span class="lr-vlan-name">${esc(iface.description || '(routed interface)')}</span>
+      <span class="lr-device-tag">&#128421; ${esc(dev.deviceName)}</span>
+      <button class="src-btn" onclick="showInterfaceSourceByDevice('${escJsStr(dev.deviceName)}', '${escJsStr(iface.name)}')">Source Lines</button>
+    </div>
+    <div class="lr-body">
+      <div class="lr-section">
+        <div class="lr-label">Subnet <button class="info-btn" onclick="showInfo('Subnet', 'The subnet calculated from the interface IP address and mask.')">i</button></div>
+        <div class="lr-value">
+          <div class="lr-net-row">
+            <span class="lr-dot" style="background:${isMatch ? '#f0883e' : 'var(--accent2)'}"></span>
+            <code>${esc(iface.cidr)}</code>
+            ${isMatch ? `<span class="ip-in-vlan-badge">${esc(highlightIp)} is here</span>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="lr-section">
+        <div class="lr-label">Interface IP <button class="info-btn" onclick="showInfo('Interface IP', 'The exact IP configured on this routed interface.')">i</button></div>
+        <div class="lr-value"><code>${esc(iface.ip)}</code></div>
+      </div>
+      ${iface.vrfName ? `<div class="lr-section"><div class="lr-label">VRF</div><div class="lr-value"><code>${esc(iface.vrfName)}</code></div></div>` : ''}
+      ${iface.aclIn || iface.aclOut ? `
+      <div class="lr-section">
+        <div class="lr-label">ACLs</div>
+        <div class="lr-value">
+          ${iface.aclIn  ? `<span class="seg-acl-badge stb-red">IN: ${esc(iface.aclIn)}</span> ` : ''}
+          ${iface.aclOut ? `<span class="seg-acl-badge stb-purple">OUT: ${esc(iface.aclOut)}</span>` : ''}
+        </div>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Overview ──────────────────────────────────────────────────────────────
+function renderOverview() {
+  const container = document.getElementById('device-summary-cards');
+  container.innerHTML = '';
+  parsedDevices.forEach(d => {
+    const networkedIfs = d.interfaces.filter(i => i.ip).length;
+    const div = document.createElement('div');
+    div.className = 'device-card';
+    div.innerHTML = `
+      <h3>&#128421; ${esc(d.deviceName)}</h3>
+      <div class="dtype">${esc(d.deviceType)}</div>
+      <div class="stat-row">
+        <div class="stat">VLANs <span>${d.vlans.length}</span></div>
+        <div class="stat">Interfaces <span>${d.interfaces.length}</span></div>
+        <div class="stat">Routed IFs <span>${networkedIfs}</span></div>
+        <div class="stat">Static Routes <span>${d.routes.length}</span></div>
+        ${d.vrfs.length ? `<div class="stat">VRFs <span>${d.vrfs.length}</span></div>` : ''}
+        ${d.bgp ? `<div class="stat">BGP AS <span>${d.bgp.asn}</span></div>` : ''}
+        ${d.ospf.length ? `<div class="stat">OSPF <span>${d.ospf.length} proc.</span></div>` : ''}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ── VLANs ─────────────────────────────────────────────────────────────────
+function renderVlans() {
+  const tbody = document.querySelector('#vlan-table tbody');
+  tbody.innerHTML = '';
+  parsedDevices.forEach(d => {
+    d.vlans.forEach(v => {
+      const nets = v.networks.map(n => `<span class="badge badge-green">${esc(n.network)}</span>`).join(' ');
+      const gws  = v.networks.map(n => `<code style="font-size:.78rem">${esc(n.ip)}</code>`).join('<br>');
+      const ifaces = v.interfaces.slice(0, 5).map(i => `<span class="badge badge-gray">${esc(i)}</span>`).join(' ')
+                   + (v.interfaces.length > 5 ? ` <span class="badge badge-gray">+${v.interfaces.length - 5}</span>` : '');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge badge-blue">${esc(d.deviceName)}</span></td>
+        <td><b>${v.id}</b></td>
+        <td>${esc(v.name) || '<span class="badge badge-gray">unnamed</span>'}</td>
+        <td>${nets || '—'}</td>
+        <td>${gws || '—'}</td>
+        <td>${ifaces || '—'}</td>
+        <td><button class="src-btn" onclick="showVlanSourceByDevice('${escJsStr(d.deviceName)}', ${v.id})">View</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+  if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No VLANs found in loaded configs.</td></tr>';
+}
+
+// ── Interfaces ────────────────────────────────────────────────────────────
+function renderInterfaces() {
+  const tbody = document.querySelector('#if-table tbody');
+  tbody.innerHTML = '';
+  parsedDevices.forEach(d => {
+    d.interfaces.forEach(i => {
+      const status = i.shutdown
+        ? '<span class="badge badge-red">shutdown</span>'
+        : '<span class="badge badge-green">up</span>';
+      const mode = i.mode
+        ? `<span class="badge badge-purple">${esc(i.mode)}</span>`
+        : (i.ip ? '<span class="badge badge-blue">routed</span>' : '—');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge badge-blue">${esc(d.deviceName)}</span></td>
+        <td><b>${esc(i.name)}</b></td>
+        <td>${esc(i.description) || '—'}</td>
+        <td>${i.ip ? `<code style="font-size:.78rem">${esc(i.ip)}/${i.cidr}</code>` : '—'}</td>
+        <td>${i.network ? `<code style="font-size:.78rem">${esc(i.network)}</code>` : '—'}</td>
+        <td>${i.vlan != null ? `<span class="badge badge-purple">${i.vlan}</span>` : '—'}</td>
+        <td>${mode}</td>
+        <td>${i.vrfName ? `<span class="badge badge-gray">${esc(i.vrfName)}</span>` : '—'}</td>
+        <td>${status}</td>
+        <td><button class="src-btn" onclick="showInterfaceSourceByDevice('${escJsStr(d.deviceName)}', '${escJsStr(i.name)}')">View</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+  if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No interfaces found.</td></tr>';
+}
+
+// ── Routes ────────────────────────────────────────────────────────────────
+function renderRoutes() {
+  const tbody = document.querySelector('#rt-table tbody');
+  tbody.innerHTML = '';
+  parsedDevices.forEach(d => {
+    d.routes.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge badge-blue">${esc(d.deviceName)}</span></td>
+        <td>${r.vrf !== 'global' ? `<span class="badge badge-purple">${esc(r.vrf)}</span>` : '<span class="badge badge-gray">global</span>'}</td>
+        <td><code style="font-size:.78rem">${esc(r.network)}</code></td>
+        <td><code style="font-size:.78rem">${esc(r.mask)} /${r.cidr}</code></td>
+        <td><code style="font-size:.78rem">${esc(r.nexthop)}</code></td>
+        <td>${esc(r.name) || '—'}</td>
+        <td><button class="src-btn" onclick="showRouteSourceByDevice('${escJsStr(d.deviceName)}', '${escJsStr(r.network)}', '${escJsStr(r.mask)}', ${r.cidr}, '${escJsStr(r.nexthop)}', '${escJsStr(r.vrf || 'global')}')">View</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+  if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No static routes found.</td></tr>';
+}
+
+// ── Relationship Map ─────────────────────────────────────────────────────
+function renderRelationshipMap() {
+  const tbody = document.querySelector('#relationship-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const qRaw = (document.getElementById('relationship-search')?.value || '').trim();
+  const q = qRaw.toLowerCase();
+  const isIpQuery = /^\d{1,3}(\.\d{1,3}){3}$/.test(qRaw) && isValidIPv4(qRaw);
+
+  const mapData = buildVlanRouterMap(parsedDevices);
+  let count = 0;
+  const matches = [];
+
+  parsedDevices.forEach(dev => {
+    dev.vlans.forEach(vlan => {
+      const mapEntry = getVlanMapEntry(mapData, dev.deviceName, vlan.id);
+      const l3Ifaces = dev.interfaces.filter(i => i.ip && (i.vlan === vlan.id || i.dot1qVlan === vlan.id));
+      const vrfs = [...new Set(l3Ifaces.map(i => i.vrfName || 'global'))];
+
+      const subnets = (vlan.networks || []).map(n => n.network || n.cidr).filter(Boolean);
+      const gateways = [...new Set([
+        ...(vlan.networks || []).map(n => n.ip).filter(Boolean),
+        ...l3Ifaces.map(i => i.ip).filter(Boolean),
+      ])];
+
+      const routerPaths = (mapEntry && mapEntry.routerAccess ? mapEntry.routerAccess : [])
+        .map(ra => `${ra.gwDeviceName} ${ra.iface}`);
+
+      const reachableCount = (mapEntry && mapEntry.routerAccess)
+        ? mapEntry.routerAccess.reduce((acc, ra) => acc + (ra.otherNets ? ra.otherNets.length : 0) + (ra.routes ? ra.routes.length : 0), 0)
+        : 0;
+
+      const haystack = [
+        dev.deviceName,
+        String(vlan.id),
+        vlan.name || '',
+        subnets.join(' '),
+        gateways.join(' '),
+        l3Ifaces.map(i => i.name).join(' '),
+        routerPaths.join(' '),
+        vrfs.join(' '),
+      ].join(' ').toLowerCase();
+
+      let ipHit = false;
+      if (isIpQuery) {
+        ipHit = gateways.includes(qRaw) || (vlan.networks || []).some(n => n.mask && ipInSubnet(qRaw, n.network, n.mask));
+      }
+
+      if (q && !(haystack.includes(q) || ipHit)) return;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge badge-blue">${esc(dev.deviceName)}</span></td>
+        <td><b>${vlan.id}</b></td>
+        <td>${esc(vlan.name) || '—'}</td>
+        <td>${subnets.length ? subnets.map(s => `<code style="font-size:.74rem">${esc(s)}</code>`).join('<br>') : '—'}</td>
+        <td>${gateways.length ? gateways.map(g => `<code style="font-size:.74rem">${esc(g)}</code>`).join('<br>') : '—'}</td>
+        <td>${l3Ifaces.length ? l3Ifaces.map(i => `<span class="badge badge-gray">${esc(i.name)}</span>`).join(' ') : '—'}</td>
+        <td>${routerPaths.length ? routerPaths.map(r => `<span class="badge badge-purple">${esc(r)}</span>`).join(' ') : '<span class="badge badge-gray">none</span>'}</td>
+        <td>${vrfs.length ? vrfs.map(v => `<span class="badge badge-gray">${esc(v)}</span>`).join(' ') : '—'}</td>
+        <td><span class="badge ${reachableCount ? 'badge-green' : 'badge-gray'}">${reachableCount} linked net(s)</span></td>
+        <td><button class="src-btn" onclick="showVlanSourceByDevice('${escJsStr(dev.deviceName)}', ${vlan.id})">View</button></td>
+      `;
+      tbody.appendChild(tr);
+      count++;
+      matches.push({
+        deviceName: dev.deviceName,
+        vlanId: vlan.id,
+        vlanName: vlan.name || '',
+        subnets,
+        gateways,
+        l3Ifaces: l3Ifaces.map(i => i.name),
+        vrfs,
+        routerPaths,
+        reachableCount,
+        mapEntry,
+      });
+    });
+  });
+
+  if (!count) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No VLAN/IP relationships matched your search.</td></tr>';
+  }
+
+  applyClickableAnalysis(document.getElementById('tab-relationship'));
+}
+
+// ── Draggable Relationship Graph ─────────────────────────────────────────
+let _relDragState = null;
+window.addEventListener('mousemove', function (e) {
+  if (!_relDragState) return;
+  const { node, startX, startY, origLeft, origTop, graph, svg, edges } = _relDragState;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  const maxL = graph.offsetWidth  - node.offsetWidth;
+  const maxT = graph.offsetHeight - node.offsetHeight;
+  node.style.left = Math.max(0, Math.min(maxL, origLeft + dx)) + 'px';
+  node.style.top  = Math.max(0, Math.min(maxT, origTop  + dy)) + 'px';
+  _relRedrawLines(svg, edges, graph.getBoundingClientRect());
+});
+window.addEventListener('mouseup', function () {
+  if (_relDragState) { _relDragState.node.style.cursor = 'grab'; _relDragState = null; }
+});
+
+function _relRedrawLines(svg, edges, cRect) {
+  [...svg.children].forEach(c => { if (c.tagName !== 'defs') c.remove(); });
+  edges.forEach(({ fromEl, toEl, color }) => {
+    const f = _relPt(fromEl, cRect), t = _relPt(toEl, cRect);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', f.x); line.setAttribute('y1', f.y);
+    line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
+    line.setAttribute('stroke', color || '#8b949e');
+    line.setAttribute('stroke-width', '1.8');
+    line.setAttribute('marker-end', 'url(#rel-arrow)');
+    line.setAttribute('opacity', '0.85');
+    svg.appendChild(line);
+  });
+}
+
+function _relPt(node, cRect) {
+  const r = node.getBoundingClientRect();
+  return { x: r.left - cRect.left + r.width / 2, y: r.top - cRect.top + r.height / 2 };
+}
+
+function shortText(s, max) {
+  max = max || 26;
+  const t = String(s || '');
+  return t.length > max ? t.slice(0, max - 1) + '...' : t;
+}
+
+function createRelNode(container, xPct, yPct, title, subtitle, cssType) {
+  const node = document.createElement('div');
+  node.className = 'rel-node ' + cssType;
+  node.style.left = xPct + '%';
+  node.style.top  = yPct + '%';
+  node.innerHTML = '<div class="n-title">' + esc(title) + '</div><div class="n-sub">' + esc(subtitle || '') + '</div>';
+  container.appendChild(node);
+  return node;
+}
+
+function renderRelationshipGraph() {
+  const graph = document.getElementById('relationship-graph');
+  if (!graph) return;
+  graph.innerHTML = '';
+
+  const qRaw = (document.getElementById('relgraph-search')?.value || '').trim();
+  const q    = qRaw.toLowerCase();
+  const isIpQuery = /^\d{1,3}(\.\d{1,3}){3}$/.test(qRaw) && isValidIPv4(qRaw);
+
+  if (!parsedDevices || !parsedDevices.length) {
+    graph.innerHTML = '<div class="rel-empty">Load at least one config file to see the graph.</div>';
+    return;
+  }
+
+  // Build matches (same filtering as relationship table)
+  const mapData = buildVlanRouterMap(parsedDevices);
+  const matches = [];
+  parsedDevices.forEach(dev => {
+    dev.vlans.forEach(vlan => {
+      const mapEntry  = getVlanMapEntry(mapData, dev.deviceName, vlan.id);
+      const l3Ifaces  = dev.interfaces.filter(i => i.ip && (i.vlan === vlan.id || i.dot1qVlan === vlan.id));
+      const subnets   = (vlan.networks || []).map(n => n.network || n.cidr).filter(Boolean);
+      const gateways  = [...new Set([
+        ...(vlan.networks || []).map(n => n.ip).filter(Boolean),
+        ...l3Ifaces.map(i => i.ip).filter(Boolean),
+      ])];
+      const routerPaths = (mapEntry && mapEntry.routerAccess ? mapEntry.routerAccess : [])
+        .map(ra => ra.gwDeviceName + ' ' + ra.iface);
+      const vrfs = [...new Set(l3Ifaces.map(i => i.vrfName || 'global'))];
+      const haystack = [dev.deviceName, String(vlan.id), vlan.name || '', subnets.join(' '), gateways.join(' '), routerPaths.join(' '), vrfs.join(' ')].join(' ').toLowerCase();
+      let ipHit = false;
+      if (isIpQuery) ipHit = gateways.includes(qRaw) || (vlan.networks || []).some(n => n.mask && ipInSubnet(qRaw, n.network, n.mask));
+      if (q && !(haystack.includes(q) || ipHit)) return;
+      matches.push({ deviceName: dev.deviceName, vlanId: vlan.id, vlanName: vlan.name || '', subnets, gateways, routerPaths, vrfs, mapEntry });
+    });
+  });
+
+  if (!matches.length) {
+    graph.innerHTML = '<div class="rel-empty">No relationships found. Try a VLAN ID (e.g. 10) or an IP (e.g. 10.1.1.1).</div>';
+    return;
+  }
+
+  // Collect unique nodes for each lane
+  const uVlans   = new Map();
+  const uSwitches = new Map();
+  const uRouters  = new Map();
+  const uSubnets  = new Map();
+
+  matches.forEach(m => {
+    const vk = m.deviceName + '|' + m.vlanId;
+    if (!uVlans.has(vk))
+      uVlans.set(vk, { title: 'VLAN ' + m.vlanId, sub: shortText((m.vlanName || '\u2014') + ' @ ' + m.deviceName, 32) });
+    if (!uSwitches.has(m.deviceName))
+      uSwitches.set(m.deviceName, { title: shortText(m.deviceName, 22), sub: 'L2/L3 Device' });
+    (m.routerPaths || []).forEach(p => {
+      const rk = String(p).split(/\s+/)[0] || p;
+      if (!uRouters.has(rk)) uRouters.set(rk, { title: shortText(rk, 22), sub: 'Router / Gateway' });
+    });
+    (m.subnets || []).forEach(s => {
+      if (!uSubnets.has(s)) uSubnets.set(s, { title: shortText(s, 22), sub: 'VLAN Subnet' });
+    });
+  });
+
+  // Dynamic canvas height
+  const maxRows = Math.max(uVlans.size, uSwitches.size, uRouters.size, uSubnets.size, 3);
+  graph.style.minHeight = Math.max(580, maxRows * 110 + 120) + 'px';
+
+  // Y distribution: evenly spread in [12%, 88%]
+  function nodeY(idx, total) {
+    if (total <= 1) return 46;
+    return 12 + (idx + 1) * (76 / (total + 1));
+  }
+
+  // Column X positions based on which lanes exist
+  const hasR = uRouters.size > 0, hasS = uSubnets.size > 0;
+  const cx = {
+    vlan:   hasS ? (hasR ? 7  : 9)  : (hasR ? 9  : 25),
+    sw:     hasS ? (hasR ? 30 : 38) : (hasR ? 35 : 72),
+    router: hasS ? 58 : 76,
+    subnet: 87,
+  };
+
+  const vlanEls   = new Map();
+  const swEls     = new Map();
+  const routerEls = new Map();
+  const subnetEls = new Map();
+  let _nid = 0;
+
+  function mkNode(xPct, yPct, title, sub, type) {
+    const el = createRelNode(graph, xPct, yPct, title, sub, type);
+    el.style.cursor = 'grab';
+    el.dataset.nid  = ++_nid;
+    return el;
+  }
+
+  [...uVlans.entries()].forEach(([k, v], i)   => vlanEls.set(k,   mkNode(cx.vlan,   nodeY(i, uVlans.size),    v.title, v.sub, 'vlan')));
+  [...uSwitches.entries()].forEach(([k, v], i) => swEls.set(k,     mkNode(cx.sw,     nodeY(i, uSwitches.size), v.title, v.sub, 'device')));
+  [...uRouters.entries()].forEach(([k, v], i)  => routerEls.set(k, mkNode(cx.router, nodeY(i, uRouters.size),  v.title, v.sub, 'device')));
+  [...uSubnets.entries()].forEach(([k, v], i)  => subnetEls.set(k, mkNode(cx.subnet, nodeY(i, uSubnets.size),  v.title, v.sub, 'net')));
+
+  // Column header labels
+  const lanes = [{ label: 'VLAN', x: cx.vlan, color: '#58a6ff' }, { label: 'Switch / Device', x: cx.sw, color: '#8b949e' }];
+  if (hasR) lanes.push({ label: 'Router / GW', x: cx.router, color: '#d2a8ff' });
+  if (hasS) lanes.push({ label: 'Subnet', x: cx.subnet, color: '#3fb950' });
+  lanes.forEach(l => {
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'position:absolute;left:' + l.x + '%;top:2%;transform:translateX(-50%);font-size:.7rem;color:' + l.color + ';text-transform:uppercase;letter-spacing:.06em;pointer-events:none;font-weight:600';
+    lbl.textContent = l.label;
+    graph.appendChild(lbl);
+  });
+
+  // Flow hint label top-right
+  const flowHint = document.createElement('div');
+  flowHint.style.cssText = 'position:absolute;right:10px;top:2%;font-size:.7rem;color:var(--muted);pointer-events:none;white-space:nowrap';
+  flowHint.innerHTML = 'VLAN &rarr; Switch &rarr; Router &rarr; Subnet';
+  graph.appendChild(flowHint);
+
+  // Build edges: VLAN→Switch→Router→Subnet
+  const edges = [];
+  const edgeKeys = new Set();
+  function addEdge(a, b, color) {
+    if (!a || !b || a === b) return;
+    const k = a.dataset.nid + '->' + b.dataset.nid;
+    if (edgeKeys.has(k)) return;
+    edgeKeys.add(k);
+    edges.push({ fromEl: a, toEl: b, color });
+  }
+
+  matches.forEach(m => {
+    const vk  = m.deviceName + '|' + m.vlanId;
+    const vEl = vlanEls.get(vk);
+    const sEl = swEls.get(m.deviceName);
+    addEdge(vEl, sEl, '#58a6ff');                                  // VLAN → Switch
+    (m.routerPaths || []).forEach(p => {
+      const rk  = String(p).split(/\s+/)[0] || p;
+      const rEl = routerEls.get(rk);
+      addEdge(sEl, rEl, '#d2a8ff');                                // Switch → Router
+      (m.subnets || []).forEach(s => addEdge(rEl, subnetEls.get(s), '#3fb950')); // Router → Subnet
+    });
+    if (!(m.routerPaths || []).length)
+      (m.subnets || []).forEach(s => addEdge(sEl, subnetEls.get(s), '#3fb950')); // Switch → Subnet (no router)
+  });
+
+  // SVG overlay with arrowhead marker
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('rel-graph-svg');
+  const defs   = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+  marker.setAttribute('id', 'rel-arrow'); marker.setAttribute('viewBox', '0 0 10 10');
+  marker.setAttribute('refX', '8');       marker.setAttribute('refY', '5');
+  marker.setAttribute('markerWidth', '6'); marker.setAttribute('markerHeight', '6');
+  marker.setAttribute('orient', 'auto-start-reverse');
+  const ap = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  ap.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z'); ap.setAttribute('fill', '#8b949e');
+  marker.appendChild(ap); defs.appendChild(marker); svg.appendChild(defs);
+  graph.prepend(svg);
+
+  _relRedrawLines(svg, edges, graph.getBoundingClientRect());
+
+  // Drag wiring — convert to px on mousedown so drag is smooth
+  graph.addEventListener('mousedown', function (e) {
+    const node = e.target.closest('.rel-node');
+    if (!node) return;
+    const gr = graph.getBoundingClientRect();
+    const nr = node.getBoundingClientRect();
+    node.style.left = (nr.left - gr.left) + 'px';
+    node.style.top  = (nr.top  - gr.top)  + 'px';
+    _relDragState = {
+      node,
+      startX: e.clientX, startY: e.clientY,
+      origLeft: nr.left - gr.left,
+      origTop:  nr.top  - gr.top,
+      graph, svg, edges,
+    };
+    node.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+}
+
+// ── Credentials Audit ─────────────────────────────────────────────────────
+function maskCredential(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (s.length <= 4) return '*'.repeat(s.length);
+  return `${s.slice(0, 2)}${'*'.repeat(Math.max(0, s.length - 4))}${s.slice(-2)}`;
+}
+
+function showCredentialSource(deviceName, lineNo, configLine) {
+  openSourceModal(`${deviceName} - credential source`, [{ lineNo, lineText: configLine || '' }]);
+}
+
+function showAuditSource(deviceName, lineNo, configLine) {
+  openSourceModal(`${deviceName} - audit source`, [{ lineNo, lineText: configLine || '' }]);
+}
+
+function renderCredentials() {
+  const container = document.getElementById('credentials-content');
+  if (!container) return;
+  const showValues = !!document.getElementById('cred-show-values')?.checked;
+  const showDecoded = !!document.getElementById('cred-show-decoded')?.checked;
+  container.innerHTML = '';
+
+  let totalEntries = 0;
+  parsedDevices.forEach(d => {
+    const creds = d.credentials || { users: [], enable: [], linePasswords: [], hasServicePasswordEncryption: false };
+    totalEntries += creds.users.length + creds.enable.length + creds.linePasswords.length;
+
+    const section = document.createElement('div');
+    const svc = creds.hasServicePasswordEncryption
+      ? '<span class="badge badge-green">service password-encryption enabled</span>'
+      : '<span class="badge badge-gray">service password-encryption not found</span>';
+
+    let html = `<div class="cred-device-title">&#128421; ${esc(d.deviceName)} <small style="color:var(--muted);font-weight:400">${esc(d.deviceType)}</small> ${svc}</div>`;
+    html += `<div class="cred-grid">
+      <div class="cred-stat"><div class="k">Users</div><div class="v">${creds.users.length}</div></div>
+      <div class="cred-stat"><div class="k">Enable Credentials</div><div class="v">${creds.enable.length}</div></div>
+      <div class="cred-stat"><div class="k">Line Passwords</div><div class="v">${creds.linePasswords.length}</div></div>
+    </div>`;
+
+    html += `<div class="table-wrap"><table class="cred-users-table"><thead><tr>
+      <th>User <button class="info-btn" onclick="showInfo('User', 'Username parsed from config lines like username <name> password/secret ...')">i</button></th>
+      <th>Privilege</th>
+      <th>Auth</th>
+      <th>Encryption Type</th>
+      <th>Stored Value</th>
+      <th>Decoded</th>
+      <th>Source</th>
+    </tr></thead><tbody>`;
+
+    if (creds.users.length) {
+      creds.users.forEach(u => {
+        const stored = showValues ? u.value : maskCredential(u.value);
+        const decoded = (showDecoded && u.reversible && u.decoded)
+          ? u.decoded
+          : (u.reversible ? '(reversible; hidden)' : '(not reversible)');
+        html += `<tr>
+          <td><b>${esc(u.username)}</b></td>
+          <td>${u.privilege ? `<span class="badge badge-purple">${esc(u.privilege)}</span>` : '—'}</td>
+          <td><span class="badge badge-blue">${esc(u.keyword)}</span></td>
+          <td><span class="badge badge-gray">${esc(u.encodingType)}</span></td>
+          <td><span class="${showValues ? 'cred-plain' : 'cred-mask'}">${esc(stored)}</span></td>
+          <td><span class="${showDecoded && u.reversible ? 'cred-plain' : 'cred-mask'}">${esc(decoded)}</span></td>
+          <td><button class="src-btn" onclick="showCredentialSource('${escJsStr(d.deviceName)}', ${u.line}, '${escJsStr(u.configLine)}')">L${u.line}</button></td>
+        </tr>`;
+      });
+    } else {
+      html += '<tr><td colspan="7" class="empty-state">No username credentials found.</td></tr>';
+    }
+    html += `</tbody></table></div>`;
+
+    html += `<div class="table-wrap" style="margin-top:10px"><table><thead><tr>
+      <th>Enable Type</th><th>Encryption Type</th><th>Stored Value</th><th>Decoded</th><th>Source</th>
+    </tr></thead><tbody>`;
+    if (creds.enable.length) {
+      creds.enable.forEach(e => {
+        const stored = showValues ? e.value : maskCredential(e.value);
+        const decoded = (showDecoded && e.reversible && e.decoded)
+          ? e.decoded
+          : (e.reversible ? '(reversible; hidden)' : '(not reversible)');
+        html += `<tr>
+          <td><span class="badge badge-blue">${esc(e.keyword)}</span></td>
+          <td><span class="badge badge-gray">${esc(e.encodingType)}</span></td>
+          <td><span class="${showValues ? 'cred-plain' : 'cred-mask'}">${esc(stored)}</span></td>
+          <td><span class="${showDecoded && e.reversible ? 'cred-plain' : 'cred-mask'}">${esc(decoded)}</span></td>
+          <td><button class="src-btn" onclick="showCredentialSource('${escJsStr(d.deviceName)}', ${e.line}, '${escJsStr(e.configLine)}')">L${e.line}</button></td>
+        </tr>`;
+      });
+    } else {
+      html += '<tr><td colspan="5" class="empty-state">No enable password/secret found.</td></tr>';
+    }
+    html += `</tbody></table></div>`;
+
+    html += `<div class="table-wrap" style="margin-top:10px"><table><thead><tr>
+      <th>Line</th><th>Encryption Type</th><th>Stored Value</th><th>Decoded</th><th>Source</th>
+    </tr></thead><tbody>`;
+    if (creds.linePasswords.length) {
+      creds.linePasswords.forEach(lp => {
+        const stored = showValues ? lp.value : maskCredential(lp.value);
+        const decoded = (showDecoded && lp.reversible && lp.decoded)
+          ? lp.decoded
+          : (lp.reversible ? '(reversible; hidden)' : '(not reversible)');
+        html += `<tr>
+          <td><code style="font-size:.76rem">${esc(lp.lineName)}</code></td>
+          <td><span class="badge badge-gray">${esc(lp.encodingType)}</span></td>
+          <td><span class="${showValues ? 'cred-plain' : 'cred-mask'}">${esc(stored)}</span></td>
+          <td><span class="${showDecoded && lp.reversible ? 'cred-plain' : 'cred-mask'}">${esc(decoded)}</span></td>
+          <td><button class="src-btn" onclick="showCredentialSource('${escJsStr(d.deviceName)}', ${lp.line}, '${escJsStr(lp.configLine)}')">L${lp.line}</button></td>
+        </tr>`;
+      });
+    } else {
+      html += '<tr><td colspan="5" class="empty-state">No console/vty line password found.</td></tr>';
+    }
+    html += `</tbody></table></div>`;
+
+    section.innerHTML = html;
+    container.appendChild(section);
+  });
+
+  if (!parsedDevices.length || totalEntries === 0) {
+    container.innerHTML = '<div class="empty-state">No credentials detected in loaded configs.</div>';
+  }
+}
+
+function renderAudit() {
+  const tbody = document.querySelector('#audit-table tbody');
+  const summary = document.getElementById('audit-summary');
+  if (!tbody || !summary) return;
+
+  tbody.innerHTML = '';
+  summary.innerHTML = '';
+  if (!parsedDevices.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No data. Load configs to run audit checks.</td></tr>';
+    return;
+  }
+
+  const findings = [];
+  const bySev = { High: 0, Medium: 0, Low: 0 };
+
+  function addFinding(dev, severity, category, finding, lineNo, lineText) {
+    findings.push({
+      device: dev.deviceName,
+      severity,
+      category,
+      finding,
+      lineNo: Number(lineNo) || 0,
+      lineText: lineText || '',
+    });
+    if (bySev[severity] != null) bySev[severity] += 1;
+  }
+
+  function firstLineMatch(dev, re) {
+    if (!dev || !dev.rawLines) return null;
+    for (let i = 0; i < dev.rawLines.length; i++) {
+      re.lastIndex = 0;
+      if (re.test(dev.rawLines[i])) return { lineNo: i + 1, lineText: dev.rawLines[i] };
+    }
+    return null;
+  }
+
+  function parseVtyTransport(dev) {
+    if (!dev || !dev.rawLines) return { hasVty: false, telnet: false, hasTransportLine: false, lineNo: 0, lineText: '' };
+    const lines = dev.rawLines;
+    let hasVty = false;
+    let telnet = false;
+    let hasTransportLine = false;
+    let lineNo = 0;
+    let lineText = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      if (!/^\s*line\s+vty\b/i.test(lines[i])) continue;
+      hasVty = true;
+      for (let j = i + 1; j < lines.length; j++) {
+        const ln = lines[j];
+        if (/^\s*line\s+/i.test(ln)) break;
+        const m = ln.match(/^\s*transport\s+input\s+(.+)$/i);
+        if (!m) continue;
+        hasTransportLine = true;
+        lineNo = j + 1;
+        lineText = ln;
+        const modes = m[1].toLowerCase();
+        if (modes.includes('telnet')) telnet = true;
+      }
+    }
+
+    return { hasVty, telnet, hasTransportLine, lineNo, lineText };
+  }
+
+  parsedDevices.forEach(dev => {
+    const creds = dev.credentials || { users: [], enable: [], linePasswords: [], hasServicePasswordEncryption: false };
+
+    if (!creds.hasServicePasswordEncryption) {
+      addFinding(dev, 'Medium', 'Credential Hygiene', 'service password-encryption not configured', 0, '');
+    }
+
+    const plainUsers = (creds.users || []).filter(u => u.encodingType === 'plaintext');
+    if (plainUsers.length) {
+      const uList = plainUsers.slice(0, 4).map(u => u.username).join(', ');
+      addFinding(dev, 'High', 'Credentials', `${plainUsers.length} username(s) use plaintext password (${uList}${plainUsers.length > 4 ? ', ...' : ''})`, plainUsers[0].line, plainUsers[0].configLine);
+    }
+
+    const type7Users = (creds.users || []).filter(u => u.encodingType === 'cisco-type7');
+    if (type7Users.length) {
+      addFinding(dev, 'Medium', 'Credentials', `${type7Users.length} username(s) use Cisco Type 7 (reversible)`, type7Users[0].line, type7Users[0].configLine);
+    }
+
+    const enablePassword = (creds.enable || []).find(e => e.keyword === 'password');
+    if (enablePassword) {
+      addFinding(dev, 'High', 'Privilege Access', 'enable password is configured; use enable secret only', enablePassword.line, enablePassword.configLine);
+    }
+
+    const plainLinePw = (creds.linePasswords || []).filter(p => p.encodingType === 'plaintext');
+    if (plainLinePw.length) {
+      addFinding(dev, 'High', 'Line Access', `${plainLinePw.length} console/VTY password(s) are plaintext`, plainLinePw[0].line, plainLinePw[0].configLine);
+    }
+
+    const type7LinePw = (creds.linePasswords || []).filter(p => p.encodingType === 'cisco-type7');
+    if (type7LinePw.length) {
+      addFinding(dev, 'Medium', 'Line Access', `${type7LinePw.length} console/VTY password(s) use Cisco Type 7`, type7LinePw[0].line, type7LinePw[0].configLine);
+    }
+
+    const vty = parseVtyTransport(dev);
+    if (vty.hasVty && vty.telnet) {
+      addFinding(dev, 'High', 'Management Plane', 'VTY transport allows telnet; restrict to ssh', vty.lineNo, vty.lineText);
+    } else if (vty.hasVty && !vty.hasTransportLine) {
+      addFinding(dev, 'Medium', 'Management Plane', 'VTY transport not explicitly restricted (set: transport input ssh)', 0, '');
+    }
+
+    const httpSrv = firstLineMatch(dev, /^\s*ip\s+http\s+server\s*$/i);
+    const httpsSrv = firstLineMatch(dev, /^\s*ip\s+http\s+secure-server\s*$/i);
+    if (httpSrv && !httpsSrv) {
+      addFinding(dev, 'High', 'Management Plane', 'HTTP server enabled without HTTPS secure-server', httpSrv.lineNo, httpSrv.lineText);
+    }
+
+    const sshv2 = firstLineMatch(dev, /^\s*ip\s+ssh\s+version\s+2\s*$/i);
+    if (!sshv2) {
+      addFinding(dev, 'Low', 'Management Plane', 'ip ssh version 2 not found', 0, '');
+    }
+
+    if (!(dev.routes || []).length) {
+      addFinding(dev, 'Low', 'Routing', 'No static routes found in this config snapshot', 0, '');
+    }
+  });
+
+  summary.innerHTML = `
+    <div class="cred-stat"><div class="k">High</div><div class="v" style="color:var(--accent3)">${bySev.High}</div></div>
+    <div class="cred-stat"><div class="k">Medium</div><div class="v" style="color:var(--accent4)">${bySev.Medium}</div></div>
+    <div class="cred-stat"><div class="k">Low</div><div class="v" style="color:var(--accent)">${bySev.Low}</div></div>
+    <div class="cred-stat"><div class="k">Total Findings</div><div class="v">${findings.length}</div></div>
+  `;
+
+  const sevOrder = { High: 0, Medium: 1, Low: 2 };
+  findings.sort((a, b) => (sevOrder[a.severity] - sevOrder[b.severity]) || a.device.localeCompare(b.device));
+
+  if (!findings.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No findings detected by current audit checks.</td></tr>';
+    return;
+  }
+
+  findings.forEach(f => {
+    const tr = document.createElement('tr');
+    const sevClass = f.severity === 'High' ? 'badge-red' : (f.severity === 'Medium' ? 'badge-purple' : 'badge-blue');
+    const src = f.lineNo
+      ? `<button class="src-btn" onclick="showAuditSource('${escJsStr(f.device)}', ${f.lineNo}, '${escJsStr(f.lineText)}')">L${f.lineNo}</button>`
+      : '<span class="badge badge-gray">n/a</span>';
+    tr.innerHTML = `
+      <td><span class="badge badge-blue">${esc(f.device)}</span></td>
+      <td><span class="badge ${sevClass}">${f.severity}</span></td>
+      <td>${esc(f.category)}</td>
+      <td>${esc(f.finding)}</td>
+      <td>${src}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderVersionCollector() {
+  const tbody = document.querySelector('#version-table tbody');
+  const summary = document.getElementById('version-summary');
+  if (!tbody || !summary) return;
+
+  tbody.innerHTML = '';
+  summary.innerHTML = '';
+
+  if (!parsedDevices.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No configs loaded.</td></tr>';
+    return;
+  }
+
+  let withVersion = 0;
+  let withSoftwareHint = 0;
+  let withSampleRevision = 0;
+  let evidenceCount = 0;
+
+  parsedDevices.forEach(d => {
+    const v = d.versionInfo || {};
+    const osVersion = v.osVersion || 'not found';
+    const software = v.softwareHint || v.platformHint || 'not found';
+    const sampleRevision = v.sampleRevision || 'n/a';
+    const evidence = Array.isArray(v.evidence) ? v.evidence : [];
+
+    if (v.osVersion) withVersion += 1;
+    if (v.softwareHint || v.platformHint) withSoftwareHint += 1;
+    if (v.sampleRevision) withSampleRevision += 1;
+    evidenceCount += evidence.length;
+
+    const evHtml = evidence.length
+      ? evidence.slice(0, 3).map(e => {
+          const src = e.line
+            ? `<button class="src-btn" onclick="showAuditSource('${escJsStr(d.deviceName)}', ${e.line}, '${escJsStr(e.configLine)}')">L${e.line}</button>`
+            : '<span class="badge badge-gray">n/a</span>';
+          return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="badge badge-gray">${esc(e.type)}</span><span>${esc(e.value)}</span>${src}</div>`;
+        }).join('')
+      : '<span class="badge badge-gray">none</span>';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge badge-blue">${esc(d.deviceName)}</span></td>
+      <td>${esc(d.deviceType)}</td>
+      <td>${v.osVersion ? `<span class="badge badge-green">${esc(osVersion)}</span>` : `<span class="badge badge-red">${esc(osVersion)}</span>`}</td>
+      <td>${esc(software)}</td>
+      <td>${v.sampleRevision ? `<span class="badge badge-purple">${esc(sampleRevision)}</span>` : '<span class="badge badge-gray">n/a</span>'}</td>
+      <td>${evHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  summary.innerHTML = `
+    <div class="cred-stat"><div class="k">Devices</div><div class="v">${parsedDevices.length}</div></div>
+    <div class="cred-stat"><div class="k">With OS Version</div><div class="v" style="color:var(--accent2)">${withVersion}</div></div>
+    <div class="cred-stat"><div class="k">With Software Hint</div><div class="v" style="color:var(--accent)">${withSoftwareHint}</div></div>
+    <div class="cred-stat"><div class="k">With Sample Revision</div><div class="v" style="color:var(--accent4)">${withSampleRevision}</div></div>
+    <div class="cred-stat"><div class="k">Total Evidence</div><div class="v">${evidenceCount}</div></div>
+  `;
+}
+
+// ── Topology Map ──────────────────────────────────────────────────────────
+function renderTopology() {
+  const wrap = document.getElementById('topology-wrap');
+  wrap.innerHTML = '';
+  if (!parsedDevices.length) { wrap.innerHTML = '<div class="empty-state">No data.</div>'; return; }
+  parsedDevices.forEach(d => {
+    const section = document.createElement('div');
+    section.className = 'topo-device';
+    const header = `<h4>&#128421; ${esc(d.deviceName)} <small style="color:var(--muted);font-weight:400">${esc(d.deviceType)}</small></h4>`;
+
+    let cards = '<div class="topo-grid">';
+    if (d.vlans.length === 0) {
+      cards += `<div style="color:var(--muted);font-size:.83rem">No VLANs detected.</div>`;
+    } else {
+      d.vlans.forEach(v => {
+        const nets = v.networks.map(n => `<div class="vnet">&#127760; ${esc(n.network)}</div>`).join('');
+        const gws  = v.networks.map(n => `<div class="vnet" style="color:var(--accent)">&#128279; GW: ${esc(n.ip)}</div>`).join('');
+        const ifCount = v.interfaces.length;
+        cards += `
+          <div class="topo-vlan">
+            <div class="vid">VLAN ${v.id}</div>
+            <div class="vname">${v.name ? esc(v.name) : '<em style="color:var(--muted)">unnamed</em>'}</div>
+            ${nets}${gws}
+            ${ifCount ? `<div class="viface">&#128268; ${ifCount} port${ifCount>1?'s':''}</div>` : ''}
+          </div>`;
+      });
+    }
+    cards += '</div>';
+
+    // Routed interfaces with no VLAN (pure L3)
+    const routedIfs = d.interfaces.filter(i => i.ip && !i.vlan && !/[Vv]lan/.test(i.name));
+    if (routedIfs.length) {
+      cards += `<div style="margin-top:16px"><h4 style="font-size:.85rem;color:var(--accent4);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px">Routed Interfaces (L3)</h4><div class="topo-grid">`;
+      routedIfs.forEach(i => {
+        cards += `
+          <div class="topo-vlan" style="border-color:#d2a8ff44">
+            <div class="vid">${esc(i.name)}</div>
+            <div class="vname" style="font-size:.8rem">${esc(i.description) || '&mdash;'}</div>
+            <div class="vnet">&#127760; ${esc(i.network)}</div>
+            <div class="vnet" style="color:var(--accent)">&#128279; GW: ${esc(i.ip)}</div>
+            ${i.vrfName ? `<div class="viface">VRF: ${esc(i.vrfName)}</div>` : ''}
+          </div>`;
+      });
+      cards += '</div></div>';
+    }
+
+    section.innerHTML = header + cards;
+    wrap.appendChild(section);
+  });
+}
+
+// ── Routing Protocols ─────────────────────────────────────────────────────
+function renderRouting() {
+  const container = document.getElementById('routing-content');
+  container.innerHTML = '';
+  let hasData = false;
+  parsedDevices.forEach(d => {
+    if (!d.ospf.length && !d.bgp && !d.vrfs.length) return;
+    hasData = true;
+    const section = document.createElement('div');
+    section.style.marginBottom = '28px';
+    let html = `<h3 style="color:var(--accent);margin-bottom:14px">&#128421; ${esc(d.deviceName)}</h3>`;
+
+    // OSPF
+    if (d.ospf.length) {
+      html += `<h4 style="color:var(--muted);font-size:.8rem;margin-bottom:8px">OSPF</h4>`;
+      html += `<div class="table-wrap"><table style="margin-bottom:16px"><thead><tr><th>Process</th><th>Router-ID</th><th>Network</th><th>Wildcard</th><th>Area</th></tr></thead><tbody>`;
+      d.ospf.forEach(p => {
+        if (p.networks.length) {
+          p.networks.forEach((n, idx) => {
+            html += `<tr><td>${idx===0?p.pid:''}</td><td>${idx===0?(p.routerId||'—'):''}</td><td><code>${esc(n.network)}</code></td><td><code>${esc(n.wildcard)}</code></td><td><span class="badge badge-blue">${esc(n.area)}</span></td></tr>`;
+          });
+        } else {
+          html += `<tr><td>${p.pid}</td><td>${p.routerId||'—'}</td><td colspan="3" style="color:var(--muted)">No network statements</td></tr>`;
+        }
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    // BGP
+    if (d.bgp) {
+      html += `<h4 style="color:var(--muted);font-size:.8rem;margin-bottom:8px">BGP AS ${esc(d.bgp.asn)}</h4>`;
+      if (d.bgp.neighbors.length) {
+        html += `<div class="table-wrap"><table style="margin-bottom:16px"><thead><tr><th>Neighbor IP</th><th>Remote AS</th><th>Description</th></tr></thead><tbody>`;
+        d.bgp.neighbors.forEach(n => {
+          html += `<tr><td><code>${esc(n.ip)}</code></td><td>${esc(n.remoteAs)}</td><td>${esc(n.description)||'—'}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+    }
+
+    // VRFs
+    if (d.vrfs.length) {
+      html += `<h4 style="color:var(--muted);font-size:.8rem;margin-bottom:8px">VRFs</h4>`;
+      html += `<div class="table-wrap"><table style="margin-bottom:16px"><thead><tr><th>VRF Name</th><th>Route Distinguisher</th></tr></thead><tbody>`;
+      d.vrfs.forEach(v => {
+        html += `<tr><td><span class="badge badge-purple">${esc(v.name)}</span></td><td>${esc(v.rd)||'—'}</td></tr>`;
+      });
+      html += `</tbody></table></div>`;
+    }
+
+    section.innerHTML = html;
+    container.appendChild(section);
+  });
+
+  if (!hasData) {
+    container.innerHTML = '<div class="empty-state">No OSPF, BGP, or VRF config found.</div>';
+  }
+}
+// ── VLAN → Router Map ────────────────────────────────────────────────────
+function ipInSubnet(ip, networkAddr, mask) {
+  try {
+    const ipN = ip.split('.').map(Number);
+    if (ipN.length !== 4 || ipN.some(n => Number.isNaN(n) || n < 0 || n > 255)) return false;
+
+    // Accept both "10.0.10.0" and "10.0.10.0/24"
+    let baseNetwork = networkAddr;
+    let effectiveMask = mask;
+    if (networkAddr.includes('/')) {
+      const parts = networkAddr.split('/');
+      baseNetwork = parts[0];
+      if (!effectiveMask && parts[1]) {
+        const cidr = Number(parts[1]);
+        if (!Number.isNaN(cidr) && cidr >= 0 && cidr <= 32) {
+          const maskN = [0, 0, 0, 0].map((_, i) => {
+            const bits = Math.max(0, Math.min(8, cidr - i * 8));
+            return bits === 0 ? 0 : (256 - Math.pow(2, 8 - bits));
+          });
+          effectiveMask = maskN.join('.');
+        }
+      }
+    }
+
+    if (!effectiveMask) return false;
+
+    const netN = baseNetwork.split('.').map(Number);
+    const maskN = effectiveMask.split('.').map(Number);
+    if (netN.length !== 4 || maskN.length !== 4) return false;
+    if (netN.some(n => Number.isNaN(n) || n < 0 || n > 255)) return false;
+    if (maskN.some(n => Number.isNaN(n) || n < 0 || n > 255)) return false;
+
+    return ipN.every((o, i) => (o & maskN[i]) === (netN[i] & maskN[i]));
+  } catch(e) { return false; }
+}
+
+function buildVlanRouterMap(devices) {
+  const results = [];
+  devices.forEach(srcDevice => {
+    if (!srcDevice.vlans.length) return;
+    srcDevice.vlans.forEach(vlan => {
+      const routerAccess = [];
+      devices.forEach(gwDevice => {
+        const isSameDevice = gwDevice === srcDevice;
+        gwDevice.interfaces.forEach(iface => {
+          if (!iface.ip) return;
+          let matched = false;
+          let matchReason = '';
+
+          // dot1Q subinterface tagged with this VLAN
+          if (iface.dot1qVlan === vlan.id) {
+            matched = true;
+            matchReason = `dot1Q ${vlan.id}`;
+          }
+          // SVI on another device for same VLAN
+          if (!matched && !isSameDevice && iface.vlan === vlan.id && /[Vv]lan/i.test(iface.name)) {
+            matched = true;
+            matchReason = `SVI VLAN ${vlan.id}`;
+          }
+          // IP address falls inside the VLAN's subnet (e.g. router subif with same network)
+          if (!matched && vlan.networks.length) {
+            vlan.networks.forEach(vnet => {
+              if (!matched && ipInSubnet(iface.ip, vnet.network.split('/')[0], vnet.mask)) {
+                // exclude the VLAN's own SVI on the same device
+                if (!(isSameDevice && iface.vlan === vlan.id)) {
+                  matched = true;
+                  matchReason = `subnet match (${vnet.network})`;
+                }
+              }
+            });
+          }
+          if (!matched) return;
+
+          // Collect other routed interfaces on the gateway device
+          const otherNets = gwDevice.interfaces
+            .filter(i => i.ip && i.network && i !== iface)
+            .map(i => ({
+              network: i.network,
+              ip: i.ip,
+              name: i.name,
+              description: i.description || '',
+              vlanId: i.vlan,
+              dot1qVlan: i.dot1qVlan,
+            }));
+
+          const routes = gwDevice.routes.map(r => ({
+            network: `${r.network}/${r.cidr}`,
+            nexthop: r.nexthop,
+            routeName: r.name,
+            vrf: r.vrf,
+          }));
+
+          routerAccess.push({
+            gwDeviceName: gwDevice.deviceName,
+            isSameDevice,
+            iface: iface.name,
+            ip: iface.ip,
+            description: iface.description || '',
+            matchReason,
+            otherNets,
+            routes,
+          });
+        });
+      });
+      results.push({ sourceDevice: srcDevice.deviceName, vlan, routerAccess });
+    });
+  });
+  return results;
+}
+
+function renderVlanRouterMap() {
+  const container = document.getElementById('vlanmap-content');
+  container.innerHTML = '';
+  const mapData = buildVlanRouterMap(parsedDevices);
+  if (!mapData.length) {
+    container.innerHTML = '<div class="empty-state">No VLAN data found.</div>';
+    return;
+  }
+
+  // Group by source device
+  const byDevice = {};
+  mapData.forEach(entry => {
+    if (!byDevice[entry.sourceDevice]) byDevice[entry.sourceDevice] = [];
+    byDevice[entry.sourceDevice].push(entry);
+  });
+
+  Object.entries(byDevice).forEach(([deviceName, entries]) => {
+    const section = document.createElement('div');
+    section.className = 'vmap-section';
+    let html = `<div class="vmap-section-title">&#128421; ${esc(deviceName)}</div>`;
+
+    entries.forEach(({ vlan, routerAccess }) => {
+      const netBadges = vlan.networks.map(n => `<span class="badge badge-green">${esc(n.network)}</span>`).join(' ');
+
+      html += `<div class="vmap-card">
+        <div class="vmap-header">
+          <span class="vmap-vid">VLAN ${vlan.id}</span>
+          ${vlan.name ? `<span class="vmap-name">${esc(vlan.name)}</span>` : '<span class="vmap-name" style="color:var(--muted)">unnamed</span>'}
+          ${netBadges}
+        </div>
+        <div class="vmap-body">
+          <div class="vmap-left">
+            <div class="lbl">VLAN Network(s)</div>
+            ${vlan.networks.length
+              ? vlan.networks.map(n => `<div class="val">${esc(n.network)}</div><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">GW: ${esc(n.ip)}</div>`).join('')
+              : '<div style="font-size:.78rem;color:var(--muted)">No IP assigned</div>'}
+            ${vlan.interfaces.length ? `<div class="lbl">Switch Ports</div><div style="font-size:.72rem;color:var(--muted)">${vlan.interfaces.slice(0,5).map(i => esc(i)).join(', ')}${vlan.interfaces.length > 5 ? ` +${vlan.interfaces.length-5} more` : ''}</div>` : ''}
+          </div>
+          <div class="vmap-right">`;
+
+      if (!routerAccess.length) {
+        html += `<div class="vmap-no-route">&#9888; No router or gateway found for this VLAN across loaded devices.</div>`;
+      } else {
+        routerAccess.forEach(ra => {
+          html += `<div class="vmap-gw-block${ra.isSameDevice ? ' intra' : ''}">
+            <div class="gw-header">${ra.isSameDevice ? '&#128260; Inter-VLAN Routing (L3 Switch)' : '&#128640; Router Access'}</div>
+            <div class="vmap-gw-row">
+              <span class="device-tag">&#128421; ${esc(ra.gwDeviceName)}</span>
+              <span class="iface-tag">${esc(ra.iface)}</span>
+              <span class="ip-tag">&#128279; ${esc(ra.ip)}</span>
+              <span class="reason-tag">(${esc(ra.matchReason)})</span>
+            </div>
+            ${ra.description ? `<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">${esc(ra.description)}</div>` : ''}
+            <div class="net-list">`;
+
+          if (ra.otherNets.length) {
+            html += `<div class="net-group-title">&#127760; Other Accessible Networks</div>`;
+            ra.otherNets.forEach(n => {
+              const isVlan = /[Vv]lan/i.test(n.name) || n.dot1qVlan != null;
+              html += `<div class="net-item">
+                <span class="net-icon ${isVlan ? 'net-icon-intra' : 'net-icon-router'}"></span>
+                <span class="net-addr">${esc(n.network)}</span>
+                <span class="net-desc">${esc(n.name)}${n.description ? ' · ' + esc(n.description) : ''}${n.vlanId != null ? ' (VLAN ' + n.vlanId + ')' : ''}${n.dot1qVlan != null ? ' (dot1Q ' + n.dot1qVlan + ')' : ''}</span>
+              </div>`;
+            });
+          }
+
+          if (ra.routes.length) {
+            html += `<div class="net-group-title">&#128218; Static Routes (via this router)</div>`;
+            ra.routes.forEach(r => {
+              html += `<div class="net-item">
+                <span class="net-icon net-icon-route"></span>
+                <span class="net-addr">${esc(r.network)}</span>
+                <span class="net-desc">via ${esc(r.nexthop)}${r.routeName ? ' · ' + esc(r.routeName) : ''}${r.vrf !== 'global' ? ' [VRF: ' + esc(r.vrf) + ']' : ''}</span>
+              </div>`;
+            });
+          }
+
+          if (!ra.otherNets.length && !ra.routes.length) {
+            html += `<div style="font-size:.78rem;color:var(--muted);margin-top:6px">No other networks on this device.</div>`;
+          }
+
+          html += `</div></div>`; // close net-list, vmap-gw-block
+        });
+      }
+
+      html += `</div></div></div>`; // close vmap-right, vmap-body, vmap-card
+    });
+
+    section.innerHTML = html;
+    container.appendChild(section);
+  });
+}
+// ── VRF Map ───────────────────────────────────────────────────────────────
+function renderVrfMap() {
+  const container = document.getElementById('vrfmap-content');
+  container.innerHTML = '';
+
+  parsedDevices.forEach(d => {
+    // Build VRF definitions — always include "global" as a VRF
+    const vrfDefs = {};
+    vrfDefs['global'] = { name: 'global', rd: '', description: 'Global Routing Table', rtImport: [], rtExport: [] };
+    d.vrfs.forEach(v => { vrfDefs[v.name] = v; });
+
+    // Map interfaces to their VRF
+    const vrfInterfaces = {}; // vrfName -> [iface]
+    d.interfaces.forEach(iface => {
+      const key = iface.vrfName || 'global';
+      if (!vrfInterfaces[key]) vrfInterfaces[key] = [];
+      vrfInterfaces[key].push(iface);
+    });
+
+    // Map routes to their VRF
+    const vrfRoutes = {};
+    d.routes.forEach(r => {
+      const key = r.vrf || 'global';
+      if (!vrfRoutes[key]) vrfRoutes[key] = [];
+      vrfRoutes[key].push(r);
+    });
+
+    // Also collect OSPF per-VRF and BGP per-VRF AF
+    const vrfOspf = {};
+    (d.ospfVrf || []).forEach(o => {
+      if (!vrfOspf[o.vrfName]) vrfOspf[o.vrfName] = [];
+      vrfOspf[o.vrfName].push(o);
+    });
+    const vrfBgpAF = {};
+    (d.bgpVrfAF || []).forEach(af => {
+      if (!vrfBgpAF[af.vrfName]) vrfBgpAF[af.vrfName] = [];
+      vrfBgpAF[af.vrfName].push(af);
+    });
+
+    // Discover any VRFs referenced by interfaces/routes but not declared
+    [...Object.keys(vrfInterfaces), ...Object.keys(vrfRoutes)].forEach(k => {
+      if (!vrfDefs[k]) vrfDefs[k] = { name: k, rd: '', description: '', rtImport: [], rtExport: [] };
+    });
+
+    // Build RT leak map: for each VRF, find other VRFs on any device whose export RT matches this VRF's import RT
+    function findLeaks(vrfName, rtImport) {
+      if (!rtImport.length) return [];
+      const leaks = [];
+      parsedDevices.forEach(otherDev => {
+        otherDev.vrfs.forEach(otherVrf => {
+          if (otherVrf.name === vrfName && otherDev === d) return;
+          const matches = (otherVrf.rtExport || []).filter(rt => rtImport.includes(rt));
+          if (matches.length) leaks.push({ fromDevice: otherDev.deviceName, fromVrf: otherVrf.name, rts: matches });
+        });
+      });
+      return leaks;
+    }
+
+    const deviceSection = document.createElement('div');
+    deviceSection.className = 'vrfmap-device';
+
+    let html = `<div class="vrfmap-device-title">&#128421; ${esc(d.deviceName)} <small style="color:var(--muted);font-weight:400">${esc(d.deviceType)}</small></div>`;
+    html += `<div class="vrfmap-grid">`;
+
+    Object.values(vrfDefs).forEach(vrf => {
+      const ifaces    = vrfInterfaces[vrf.name] || [];
+      const routes    = vrfRoutes[vrf.name]     || [];
+      const ospfProcs = vrfOspf[vrf.name]       || [];
+      const bgpAFs    = vrfBgpAF[vrf.name]      || [];
+      const leaksIn   = findLeaks(vrf.name, vrf.rtImport || []);
+
+      // Skip empty global VRF if nothing is there
+      if (vrf.name === 'global' && !ifaces.length && !routes.length) return;
+
+      const isGlobal = vrf.name === 'global';
+      html += `<div class="vrf-card${isGlobal ? ' vrf-global' : ''}">`;
+
+      // ── Header ──
+      html += `<div class="vrf-card-header">
+        <div class="vrf-card-title">
+          <span class="vrf-name-badge">&#127758; ${esc(vrf.name)}</span>
+          ${vrf.rd ? `<span class="vrf-rd">RD: ${esc(vrf.rd)}</span>` : ''}
+        </div>
+        ${vrf.description ? `<div class="vrf-desc">${esc(vrf.description)}</div>` : ''}`;
+
+      if ((vrf.rtImport && vrf.rtImport.length) || (vrf.rtExport && vrf.rtExport.length)) {
+        html += `<div class="vrf-rt-row">`;
+        (vrf.rtImport || []).forEach(rt => {
+          html += `<span class="vrf-rt-badge vrf-rt-import">&#8595; import ${esc(rt)}</span>`;
+        });
+        (vrf.rtExport || []).forEach(rt => {
+          html += `<span class="vrf-rt-badge vrf-rt-export">&#8593; export ${esc(rt)}</span>`;
+        });
+        html += `</div>`;
+      }
+      html += `</div>`; // end header
+
+      // ── Body ──
+      html += `<div class="vrf-card-body">`;
+
+      // Interfaces
+      if (ifaces.length) {
+        html += `<div class="vrf-section-label">&#128268; Interfaces (${ifaces.length})</div>`;
+        ifaces.forEach(iface => {
+          const status = iface.shutdown
+            ? '<span class="badge badge-red" style="font-size:.65rem">shutdown</span>'
+            : '<span class="badge badge-green" style="font-size:.65rem">up</span>';
+          html += `<div class="vrf-iface-row">
+            <span class="vrf-iface-name">${esc(iface.name)}</span>
+            ${iface.network ? `<span class="vrf-iface-net">&#127760; ${esc(iface.network)}</span>` : '<span style="color:var(--muted);font-size:.72rem">no IP</span>'}
+            ${status}
+            ${iface.description ? `<span class="vrf-iface-desc">${esc(iface.description)}</span>` : ''}
+          </div>`;
+        });
+      } else {
+        html += `<div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">No interfaces assigned.</div>`;
+      }
+
+      // Routes
+      if (routes.length) {
+        html += `<div class="vrf-section-label">&#128218; Static Routes (${routes.length})</div>`;
+        routes.forEach(r => {
+          html += `<div class="vrf-route-row">
+            <span class="vrf-route-net">${esc(r.network)}/${r.cidr}</span>
+            <span style="color:var(--muted);font-size:.72rem">via</span>
+            <span class="vrf-route-nh">${esc(r.nexthop)}</span>
+            ${r.name ? `<span class="vrf-route-name">${esc(r.name)}</span>` : ''}
+          </div>`;
+        });
+      }
+
+      // OSPF per-VRF
+      if (ospfProcs.length) {
+        html += `<div class="vrf-section-label">&#128203; OSPF</div>`;
+        ospfProcs.forEach(o => {
+          html += `<div style="font-size:.75rem;margin-bottom:4px">Process <b>${esc(o.pid)}</b>${o.routerId ? ` &middot; Router-ID <code>${esc(o.routerId)}</code>` : ''}`;
+          if (o.networks.length) {
+            html += `<div style="margin-top:3px;padding-left:8px">` +
+              o.networks.map(n => `<div style="font-size:.72rem;color:var(--muted)"><code>${esc(n.network)}</code> / <code>${esc(n.wildcard)}</code> area <span class="badge badge-blue" style="font-size:.65rem">${esc(n.area)}</span></div>`).join('') +
+              `</div>`;
+          }
+          html += `</div>`;
+        });
+      }
+
+      // BGP per-VRF AF
+      if (bgpAFs.length) {
+        html += `<div class="vrf-section-label">&#128200; BGP (AS ${esc(bgpAFs[0].asn)})</div>`;
+        bgpAFs.forEach(af => {
+          if (af.neighbors.length) {
+            html += af.neighbors.map(n =>
+              `<div class="vrf-route-row"><span class="vrf-route-net">${esc(n.ip)}</span><span style="color:var(--muted);font-size:.72rem">remote-as</span><span class="vrf-route-nh">${esc(n.remoteAs)}</span></div>`
+            ).join('');
+          }
+        });
+      }
+
+      // RT-based route leaking
+      if (leaksIn.length) {
+        html += `<div class="vrf-leak-card">
+          <div class="vrf-leak-title">&#128100; Route Leaking (RT Import Matches)</div>`;
+        leaksIn.forEach(leak => {
+          html += `<div class="vrf-leak-row">
+            <span class="badge badge-purple" style="font-size:.68rem">${esc(leak.fromVrf)}</span>
+            <span style="font-size:.72rem;color:var(--muted)">on ${esc(leak.fromDevice)}</span>
+            <span style="font-size:.7rem;color:var(--accent4)">&rarr; RT: ${leak.rts.map(esc).join(', ')}</span>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div></div>`; // end body, vrf-card
+    });
+
+    html += `</div>`; // end vrfmap-grid
+    deviceSection.innerHTML = html;
+    container.appendChild(deviceSection);
+  });
+
+  if (!container.children.length) {
+    container.innerHTML = '<div class="empty-state">No VRF data found in loaded configs.</div>';
+  }
+}
+
+// ── VLAN Segmentation ─────────────────────────────────────────────────────
+function renderSegmentation() {
+  const container = document.getElementById('segmentation-content');
+  container.innerHTML = '';
+
+  parsedDevices.forEach(d => {
+    const section = document.createElement('div');
+    section.className = 'seg-device';
+
+    // ── Build per-VLAN L3 interfaces index ──────────────────────────────
+    // For each VLAN, find all L3 interfaces that serve it (SVI, dot1Q subif)
+    function getVlanL3Ifaces(vlanId) {
+      return d.interfaces.filter(i =>
+        i.ip && (
+          i.vlan === vlanId ||
+          i.dot1qVlan === vlanId ||
+          ((/[Vv]lan/i.test(i.name)) && i.vlan === vlanId)
+        )
+      );
+    }
+
+    // ── Determine segment type per VLAN ─────────────────────────────────
+    // ROUTED_PEER: set of VLAN IDs reachable from this VLAN via L3 on any single device
+    function getRoutedPeers(vlanId) {
+      const peers = new Set();
+      // Same device: look for any other VLAN whose L3 iface is on the same device
+      d.vlans.forEach(otherV => {
+        if (otherV.id === vlanId) return;
+        const myL3    = getVlanL3Ifaces(vlanId);
+        const theirL3 = getVlanL3Ifaces(otherV.id);
+        if (myL3.length && theirL3.length) peers.add(otherV.id);
+      });
+      // Cross-device: router has sub-interfaces for both VLANs
+      parsedDevices.forEach(otherDev => {
+        if (otherDev === d) return;
+        d.vlans.forEach(otherV => {
+          if (otherV.id === vlanId) return;
+          const myL3OnRouter    = otherDev.interfaces.filter(i => i.ip && (i.dot1qVlan === vlanId   || i.vlan === vlanId));
+          const theirL3OnRouter = otherDev.interfaces.filter(i => i.ip && (i.dot1qVlan === otherV.id || i.vlan === otherV.id));
+          if (myL3OnRouter.length && theirL3OnRouter.length) peers.add(otherV.id);
+        });
+      });
+      return [...peers];
+    }
+
+    function getAcls(vlanId) {
+      const acls = [];
+      d.interfaces.filter(i => i.vlan === vlanId || i.dot1qVlan === vlanId).forEach(i => {
+        if (i.aclIn)  acls.push({ name: i.aclIn,  dir: 'in',  iface: i.name });
+        if (i.aclOut) acls.push({ name: i.aclOut, dir: 'out', iface: i.name });
+      });
+      return acls;
+    }
+
+    // Build segmentation data for all VLANs
+    const segData = d.vlans.map(v => {
+      const l3ifaces   = getVlanL3Ifaces(v.id);
+      const peers      = getRoutedPeers(v.id);
+      const acls       = getAcls(v.id);
+      const hasL3      = l3ifaces.length > 0;
+      const hasAcl     = acls.length > 0;
+      const isRouted   = peers.length > 0;
+      const trunkPorts = (d.trunkLinks || []).filter(t => t.allowedVlans.includes(v.id));
+      const accessPorts= d.interfaces.filter(i => i.mode === 'access' && i.vlan === v.id);
+      let segType = 'nol3';
+      if (hasL3 && isRouted && hasAcl) segType = 'acl';
+      else if (hasL3 && isRouted)     segType = 'routed';
+      else if (hasL3)                 segType = 'isolated';
+      return { vlan: v, l3ifaces, peers, acls, hasL3, segType, trunkPorts, accessPorts };
+    });
+
+    // ── Summary bar ─────────────────────────────────────────────────────
+    const counts = { total: segData.length, isolated: 0, routed: 0, acl: 0, nol3: 0 };
+    segData.forEach(s => counts[s.segType]++);
+
+    let html = `<div class="seg-device-title">&#128421; ${esc(d.deviceName)} <small style="color:var(--muted);font-weight:400">${esc(d.deviceType)}</small></div>`;
+    html += `<div class="seg-summary">
+      <div class="seg-stat total"><div class="sval">${counts.total}</div><div class="slbl">Total VLANs</div></div>
+      <div class="seg-stat isolated"><div class="sval">${counts.isolated}</div><div class="slbl">&#9989; L3 Isolated</div></div>
+      <div class="seg-stat routed"><div class="sval">${counts.routed}</div><div class="slbl">&#9888; Routed</div></div>
+      <div class="seg-stat acl"><div class="sval">${counts.acl}</div><div class="slbl">&#128274; ACL Restricted</div></div>
+      <div class="seg-stat nol3"><div class="sval">${counts.nol3}</div><div class="slbl">&#9675; L2 Only</div></div>
+    </div>`;
+
+    // ── Reachability Matrix (only if ≤ 40 VLANs for readability) ────────
+    if (segData.length > 1 && segData.length <= 40) {
+      html += `<div class="seg-matrix-title">&#128202; VLAN Reachability Matrix</div>`;
+      html += `<div class="matrix-legend">
+        <div class="ml-item"><div class="ml-dot" style="background:#3fb95018;border:1px solid #3fb95044"></div> Isolated (no L3 path)</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#7c4f0044;border:1px solid #7c4f0088"></div> Routed (inter-VLAN routing)</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#1f6feb44;border:1px solid #1f6feb88"></div> Routed + ACL restricted</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#21262d;border:1px solid var(--border)"></div> Same VLAN</div>
+      </div>`;
+      html += `<div class="seg-matrix-wrap"><table class="seg-matrix"><thead><tr><th class="row-hdr"></th>`;
+
+      segData.forEach(s => {
+        html += `<th class="col-hdr" title="VLAN ${s.vlan.id}${s.vlan.name ? ' - ' + s.vlan.name : ''}">VLAN&nbsp;${s.vlan.id}</th>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      segData.forEach(rowS => {
+        html += `<tr><th class="row-hdr">VLAN&nbsp;${rowS.vlan.id}${rowS.vlan.name ? '<br><span style="font-size:.62rem;color:var(--muted)">' + esc(rowS.vlan.name) + '</span>' : ''}</th>`;
+        segData.forEach(colS => {
+          if (rowS.vlan.id === colS.vlan.id) {
+            html += `<td class="cell-self" title="Same VLAN">&#9644;</td>`;
+          } else {
+            const peersOfRow = rowS.peers;
+            const isReachable = peersOfRow.includes(colS.vlan.id);
+            const rowAcls = rowS.acls; const colAcls = colS.acls;
+            const hasAcl = isReachable && (rowAcls.length > 0 || colAcls.length > 0);
+            if (!isReachable) {
+              html += `<td class="cell-iso" title="Isolated">&#10003;</td>`;
+            } else if (hasAcl) {
+              html += `<td class="cell-acl" title="Routed + ACL">&#128274;</td>`;
+            } else {
+              html += `<td class="cell-routed" title="Routed (inter-VLAN)">&#9651;</td>`;
+            }
+          }
+        });
+        html += `</tr>`;
+      });
+      html += `</tbody></table></div>`;
+    } else if (segData.length > 40) {
+      html += `<div style="font-size:.82rem;color:var(--muted);margin-bottom:18px">&#9432; Matrix hidden (${segData.length} VLANs — too large for display). Per-VLAN cards below show full detail.</div>`;
+    }
+
+    // ── Per-VLAN segmentation cards ──────────────────────────────────────
+    const typeLabels = { isolated: ['L3 Isolated', 'stb-iso'], routed: ['Routed', 'stb-routed'], acl: ['ACL Restricted', 'stb-acl'], nol3: ['L2 Only', 'stb-nol3'] };
+    const borderClass = { isolated: 'border-iso', routed: 'border-routed', acl: 'border-acl', nol3: 'border-nol3' };
+
+    html += `<div class="seg-vlan-grid">`;
+    segData.forEach(s => {
+      const [typeLabel, typeCls] = typeLabels[s.segType];
+      html += `<div class="seg-vlan-card ${borderClass[s.segType]}">
+        <div class="seg-card-hdr">
+          <span class="seg-vid">VLAN ${s.vlan.id}</span>
+          ${s.vlan.name ? `<span class="seg-vname">${esc(s.vlan.name)}</span>` : ''}
+          <span class="seg-type-badge ${typeCls}">${typeLabel}</span>
+        </div>
+        <div class="seg-card-body">`;
+
+      // L3 interfaces (SVI / sub-if)
+      if (s.l3ifaces.length) {
+        html += `<div class="seg-row"><span class="seg-row-lbl">L3 Gateway</span><div>`;
+        s.l3ifaces.forEach(i => {
+          html += `<div style="font-size:.75rem;font-family:monospace;color:var(--accent2)">${esc(i.ip)}/${i.cidr} <span style="color:var(--muted)">(${esc(i.name)})</span></div>`;
+        });
+        html += `</div></div>`;
+      }
+
+      // ACLs
+      if (s.acls.length) {
+        html += `<div class="seg-row"><span class="seg-row-lbl">ACLs</span><div style="display:flex;gap:4px;flex-wrap:wrap">`;
+        s.acls.forEach(a => {
+          html += `<span class="seg-acl-badge">&#128274; ${esc(a.name)} (${a.dir}) on ${esc(a.iface)}</span>`;
+        });
+        html += `</div></div>`;
+      }
+
+      // Routable peers
+      if (s.peers.length) {
+        html += `<div class="seg-row"><span class="seg-row-lbl">Routes to</span><div class="seg-peers">`;
+        s.peers.forEach(pid => {
+          const peerData = segData.find(x => x.vlan.id === pid);
+          const hasAcl = peerData && (s.acls.length || (peerData.acls && peerData.acls.length));
+          const label = `${pid}${peerData && peerData.vlan.name ? ' ' + peerData.vlan.name : ''}`;
+          html += `<span class="seg-peer${hasAcl ? ' acl-peer' : ''}">${esc(label)}</span>`;
+        });
+        html += `</div></div>`;
+      }
+
+      // Trunk ports
+      if (s.trunkPorts.length) {
+        html += `<div class="seg-row"><span class="seg-row-lbl">Trunk ports</span><div style="display:flex;gap:4px;flex-wrap:wrap">`;
+        s.trunkPorts.forEach(t => {
+          html += `<span class="badge badge-gray" style="font-size:.68rem">${esc(t.name)}</span>`;
+        });
+        html += `</div></div>`;
+      }
+
+      // Access ports
+      if (s.accessPorts.length) {
+        html += `<div class="seg-row"><span class="seg-row-lbl">Access ports</span><span style="font-size:.75rem;color:var(--muted)">${s.accessPorts.length} port${s.accessPorts.length > 1 ? 's' : ''}: ${s.accessPorts.slice(0,4).map(i => esc(i.name)).join(', ')}${s.accessPorts.length > 4 ? '…' : ''}</span></div>`;
+      }
+
+      if (!s.hasL3 && !s.trunkPorts.length && !s.accessPorts.length) {
+        html += `<div style="font-size:.75rem;color:var(--muted)">No interfaces found for this VLAN.</div>`;
+      }
+
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+
+    // ── Trunk Port Analysis ───────────────────────────────────────────────
+    if (d.trunkLinks && d.trunkLinks.length) {
+      html += `<div class="trunk-section-title">&#128268; Trunk Port Analysis (${d.trunkLinks.length} trunk link${d.trunkLinks.length > 1 ? 's' : ''})</div>`;
+      html += `<div class="trunk-list">`;
+      d.trunkLinks.forEach(t => {
+        html += `<div class="trunk-row">
+          <div class="trunk-name">${esc(t.name)} <span style="font-size:.7rem;font-weight:400;color:var(--muted)">native VLAN ${t.nativeVlan}</span></div>
+          ${t.description ? `<div class="trunk-desc">${esc(t.description)}</div>` : ''}
+          <div class="trunk-vlans">`;
+        if (t.allowedVlans.length) {
+          t.allowedVlans.forEach(vid => {
+            const vd = d.vlans.find(v => v.id === vid);
+            const label = vd && vd.name ? `${vid} ${vd.name}` : String(vid);
+            html += `<span class="trunk-vlan-chip">${esc(label)}</span>`;
+          });
+        } else {
+          html += `<span style="font-size:.72rem;color:var(--muted)">all VLANs (no explicit allow list)</span>`;
+        }
+        html += `</div></div>`;
+      });
+      html += `</div>`;
+    }
+
+    section.innerHTML = html;
+    container.appendChild(section);
+  });
+
+  if (!container.children.length) {
+    container.innerHTML = '<div class="empty-state">No VLAN data found in loaded configs.</div>';
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const panels = ['overview','vlans','interfaces','routes','relationship','relgraph','credentials','audit','versions','topology','routing','vlanmap','vrfmap','segmentation','vlansearch','iplookup'];
+    t.classList.toggle('active', panels[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'relgraph') renderRelationshipGraph();
+}
+
+function filterTable(tableId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#${tableId} tbody tr`).forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function clearAll() {
+  document.getElementById('upload-grid').innerHTML = '';
+  cardCount = 0;
+  parsedDevices = [];
+  document.getElementById('results').style.display = 'none';
+  addDeviceCard('Core Switch');
+  addDeviceCard('Router');
+}
+
+function csvEscape(value) {
+  const s = value == null ? '' : String(value);
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+function downloadBlob(content, type, filename) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function getActiveTabName() {
+  const activePanel = document.querySelector('.tab-panel.active');
+  return activePanel ? activePanel.id.replace('tab-', '') : 'overview';
+}
+
+function getActiveTabTitle() {
+  const activeTab = document.querySelector('.tab.active');
+  return activeTab ? activeTab.textContent.trim() : 'Selected Tab';
+}
+
+function exportVisibleTable(tableId, fallbackName) {
+  const table = document.getElementById(tableId);
+  if (!table) return false;
+  const headers = [...table.querySelectorAll('thead th')].map(th => th.childNodes[0] ? th.childNodes[0].textContent.trim() : th.textContent.trim());
+  const rows = [...table.querySelectorAll('tbody tr')].filter(tr => tr.style.display !== 'none');
+  if (!rows.length) {
+    alert('No visible rows to export in this selected tab.');
+    return true;
+  }
+
+  const csvRows = [headers.map(csvEscape).join(',')];
+  rows.forEach(tr => {
+    const cols = [...tr.querySelectorAll('td')].map(td => td.innerText.trim().replace(/\s+/g, ' '));
+    csvRows.push(cols.map(csvEscape).join(','));
+  });
+  downloadBlob(csvRows.join('\n'), 'text/csv', `${fallbackName}.csv`);
+  return true;
+}
+
+function exportActivePanelText(tabName, title) {
+  const panel = document.getElementById(`tab-${tabName}`);
+  if (!panel) return;
+  const text = panel.innerText.trim();
+  if (!text) {
+    alert('No visible content to export in this selected tab.');
+    return;
+  }
+  downloadBlob(`${title}\n\n${text}\n`, 'text/plain', `${tabName}.txt`);
+}
+
+function exportActiveTab() {
+  const tabName = getActiveTabName();
+  const title = getActiveTabTitle();
+
+  if (tabName === 'vlans' && exportVisibleTable('vlan-table', 'vlans-selected')) return;
+  if (tabName === 'interfaces' && exportVisibleTable('if-table', 'interfaces-selected')) return;
+  if (tabName === 'routes' && exportVisibleTable('rt-table', 'routes-selected')) return;
+  if (tabName === 'relationship' && exportVisibleTable('relationship-table', 'relationship-selected')) return;
+  if (tabName === 'audit' && exportVisibleTable('audit-table', 'audit-findings')) return;
+  if (tabName === 'versions' && exportVisibleTable('version-table', 'version-collector')) return;
+  if (tabName === 'relgraph') { exportActivePanelText('relgraph', 'Relationship-Graph'); return; }
+
+  exportActivePanelText(tabName, title);
+}
+
+function printActiveTab() {
+  const tabName = getActiveTabName();
+  const title = getActiveTabTitle();
+  const panel = document.getElementById(`tab-${tabName}`);
+  if (!panel) return;
+
+  const styles = [...document.querySelectorAll('style, link[rel="stylesheet"]')].map(el => el.outerHTML).join('\n');
+  const printWindow = window.open('', '_blank', 'width=1200,height=900');
+  if (!printWindow) {
+    alert('Popup blocked. Allow popups to print the selected tab.');
+    return;
+  }
+
+  printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>${esc(title)}</title>
+  ${styles}
+  <style>
+    body { background: #fff; color: #000; padding: 20px; font-family: Segoe UI, Arial, sans-serif; }
+    .tab-panel { display: block !important; }
+    .src-btn, .info-btn, .lookup-opt, .btn-sm, button { display: none !important; }
+    .src-modal, .info-modal { display: none !important; }
+    .lookup-wrap, .device-card, .topo-vlan, .vmap-card, .vrf-card, .seg-vlan-card, .lr-card, .trunk-row { break-inside: avoid; }
+    header, .upload-zone, .tabs, .export-bar { display: none !important; }
+    code { color: #000 !important; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 16px;font-size:22px">${esc(title)}</h1>
+  ${panel.outerHTML}
+</body>
+</html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.onload = () => {
+    printWindow.print();
+  };
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+addDeviceCard('Core Switch');
+addDeviceCard('Router');
+</script>
+
+<footer class="site-footer">
+  <span>Network Devices Configuration Analyzer</span>
+  <span class="footer-divider">&bull;</span>
+  <span>Built by <strong>Majid Alkind</strong></span>
+</footer>
+
+</body>
+</html>
